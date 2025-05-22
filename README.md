@@ -9,4 +9,5 @@ Things that somewhat work so far.
 
 Things that DO **NOT** work with this tool so far.
 - [ ] Just about anything else not explicitly mentioned above.
+- [ ] NGWAF Settings. See [sigsci-ngwaf-terraformer](https://github.com/fastly/sigsci-ngwaf-terraformer/tree/main) for that work.
 - [ ] VCL Dictionaries
