@@ -14,4 +14,10 @@ Things that DO **NOT** work with this tool so far.
 
 # Quickstart
 
-`make rerun`
+```
+export FASTLY_TF_DISPLAY_SENSITIVE_FIELDS="true"
+make rerun
+```
+
+
+*Note* This will set the following environment variable which is needed to generate otherwise sensitive Terraform fields for the Fastly provider. `FASTLY_TF_DISPLAY_SENSITIVE_FIELDS="true"`
