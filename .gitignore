@@ -37,3 +37,7 @@ override.tf.json
 terraform.rc
 .terraform.lock.hcl
 go.sum
+/go
+go.tar.gz
+GEMINI.md
+CLAUDE.md
