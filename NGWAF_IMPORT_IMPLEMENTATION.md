@@ -37,6 +37,9 @@ All alert integrations are workspace-scoped and require iterating through worksp
 - Uses descriptive names when available (alert description, redaction field, threshold name, etc.)
 - Falls back to resource ID when names are empty or problematic
 - Applies sanitization for Terraform compatibility (alphanumeric + underscore only)
+- **NEW**: For workspace-scoped resources, prefixes resource names with sanitized workspace ID to prevent conflicts
+  - Format: `{sanitized_workspace_id}_{resource_name}`
+  - Example: `prod_tf_ngwaf_site_sql_injection_protection` instead of just `sql_injection_protection`
 
 ### API Integration
 - Uses Fastly Go SDK v11 NGWAF packages
@@ -54,17 +57,22 @@ All alert integrations are workspace-scoped and require iterating through worksp
 ```hcl
 import {
   id = "workspace-123/alert-456"
-  to = fastly_ngwaf_alert_slack_integration.critical_performance_alert
+  to = fastly_ngwaf_alert_slack_integration.workspace_123_critical_performance_alert
 }
 
 import {
   id = "workspace-123/redaction-789"
-  to = fastly_ngwaf_redaction.user_password
+  to = fastly_ngwaf_redaction.workspace_123_user_password
 }
 
 import {
   id = "workspace-123/threshold-abc"
-  to = fastly_ngwaf_thresholds.rate_limit_threshold
+  to = fastly_ngwaf_thresholds.workspace_123_rate_limit_threshold
+}
+
+import {
+  id = "prod_tf_ngwaf_site/CVE-2025-54236"
+  to = fastly_ngwaf_virtual_patches.prod_tf_ngwaf_site_adobe_commerce_and_magento_open_source_unauthenticated_api_access
 }
 ```
 
