@@ -19,6 +19,17 @@ import (
 	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/rules"
 	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/signals"
 	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/datadog"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/jira"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/mailinglist"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/microsoftteams"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/opsgenie"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/pagerduty"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/slack"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/webhook"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/redactions"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/thresholds"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/virtualpatches"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
@@ -461,6 +472,396 @@ func main() {
 				importCount++
 
 				fmt.Printf("  Added import for NGWAF account signal: %s (ID: %s) as fastly_ngwaf_account_signal.%s\n", signal.Name, signal.SignalID, tfSignalResourceName)
+			}
+		}
+	}
+
+	// --- 8. Process NGWAF Workspace Alert Integrations ---
+	// For each workspace, fetch all alert integrations
+	if ngwafWorkspaces != nil && len(ngwafWorkspaces.Data) > 0 {
+		fmt.Println("\nFetching NGWAF workspace alert integrations...")
+		
+		for _, workspace := range ngwafWorkspaces.Data {
+			if workspace.WorkspaceID == "" {
+				continue
+			}
+			
+			fmt.Printf("  Processing alerts for workspace: %s (ID: %s)\n", workspace.Name, workspace.WorkspaceID)
+			
+			// Datadog alerts
+			datadogAlerts, err := datadog.List(context.Background(), client, &datadog.ListInput{WorkspaceID: &workspace.WorkspaceID})
+			if err != nil {
+				log.Printf("Error listing NGWAF workspace datadog alerts for workspace %s: %v", workspace.WorkspaceID, err)
+			} else if len(datadogAlerts.Data) > 0 {
+				fmt.Printf("    Found %d datadog alert(s)\n", len(datadogAlerts.Data))
+				for _, alert := range datadogAlerts.Data {
+					if alert.ID == "" {
+						continue
+					}
+					
+					// Use workspace ID + alert ID as composite import ID
+					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
+					
+					// Sanitize the alert description for the Terraform resource name
+					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_datadog")
+					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_datadog_unnamed" || tfAlertResourceName == "ngwaf_alert_datadog_sanitized_empty" {
+						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
+						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_datadog_%s", sanitizedIDForName)
+					}
+					
+					alertImportBlock := rootBody.AppendNewBlock("import", nil)
+					alertImportBody := alertImportBlock.Body()
+					alertImportBody.SetAttributeValue("id", cty.StringVal(importID))
+					
+					alertImportBody.SetAttributeTraversal("to", hcl.Traversal{
+						hcl.TraverseRoot{Name: "fastly_ngwaf_alert_datadog_integration"},
+						hcl.TraverseAttr{Name: tfAlertResourceName},
+					})
+					rootBody.AppendNewline()
+					importCount++
+					
+					fmt.Printf("      Added import for NGWAF datadog alert: %s (ID: %s) as fastly_ngwaf_alert_datadog_integration.%s\n", alert.Description, importID, tfAlertResourceName)
+				}
+			}
+			
+			// Jira alerts
+			jiraAlerts, err := jira.List(context.Background(), client, &jira.ListInput{WorkspaceID: &workspace.WorkspaceID})
+			if err != nil {
+				log.Printf("Error listing NGWAF workspace jira alerts for workspace %s: %v", workspace.WorkspaceID, err)
+			} else if len(jiraAlerts.Data) > 0 {
+				fmt.Printf("    Found %d jira alert(s)\n", len(jiraAlerts.Data))
+				for _, alert := range jiraAlerts.Data {
+					if alert.ID == "" {
+						continue
+					}
+					
+					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
+					
+					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_jira")
+					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_jira_unnamed" || tfAlertResourceName == "ngwaf_alert_jira_sanitized_empty" {
+						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
+						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_jira_%s", sanitizedIDForName)
+					}
+					
+					alertImportBlock := rootBody.AppendNewBlock("import", nil)
+					alertImportBody := alertImportBlock.Body()
+					alertImportBody.SetAttributeValue("id", cty.StringVal(importID))
+					
+					alertImportBody.SetAttributeTraversal("to", hcl.Traversal{
+						hcl.TraverseRoot{Name: "fastly_ngwaf_alert_jira_integration"},
+						hcl.TraverseAttr{Name: tfAlertResourceName},
+					})
+					rootBody.AppendNewline()
+					importCount++
+					
+					fmt.Printf("      Added import for NGWAF jira alert: %s (ID: %s) as fastly_ngwaf_alert_jira_integration.%s\n", alert.Description, importID, tfAlertResourceName)
+				}
+			}
+			
+			// Mailing list alerts
+			mailinglistAlerts, err := mailinglist.List(context.Background(), client, &mailinglist.ListInput{WorkspaceID: &workspace.WorkspaceID})
+			if err != nil {
+				log.Printf("Error listing NGWAF workspace mailing list alerts for workspace %s: %v", workspace.WorkspaceID, err)
+			} else if len(mailinglistAlerts.Data) > 0 {
+				fmt.Printf("    Found %d mailing list alert(s)\n", len(mailinglistAlerts.Data))
+				for _, alert := range mailinglistAlerts.Data {
+					if alert.ID == "" {
+						continue
+					}
+					
+					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
+					
+					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_mailing_list")
+					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_mailing_list_unnamed" || tfAlertResourceName == "ngwaf_alert_mailing_list_sanitized_empty" {
+						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
+						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_mailing_list_%s", sanitizedIDForName)
+					}
+					
+					alertImportBlock := rootBody.AppendNewBlock("import", nil)
+					alertImportBody := alertImportBlock.Body()
+					alertImportBody.SetAttributeValue("id", cty.StringVal(importID))
+					
+					alertImportBody.SetAttributeTraversal("to", hcl.Traversal{
+						hcl.TraverseRoot{Name: "fastly_ngwaf_alert_mailing_list_integration"},
+						hcl.TraverseAttr{Name: tfAlertResourceName},
+					})
+					rootBody.AppendNewline()
+					importCount++
+					
+					fmt.Printf("      Added import for NGWAF mailing list alert: %s (ID: %s) as fastly_ngwaf_alert_mailing_list_integration.%s\n", alert.Description, importID, tfAlertResourceName)
+				}
+			}
+			
+			// Microsoft Teams alerts
+			microsoftteamsAlerts, err := microsoftteams.List(context.Background(), client, &microsoftteams.ListInput{WorkspaceID: &workspace.WorkspaceID})
+			if err != nil {
+				log.Printf("Error listing NGWAF workspace microsoft teams alerts for workspace %s: %v", workspace.WorkspaceID, err)
+			} else if len(microsoftteamsAlerts.Data) > 0 {
+				fmt.Printf("    Found %d microsoft teams alert(s)\n", len(microsoftteamsAlerts.Data))
+				for _, alert := range microsoftteamsAlerts.Data {
+					if alert.ID == "" {
+						continue
+					}
+					
+					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
+					
+					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_microsoft_teams")
+					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_microsoft_teams_unnamed" || tfAlertResourceName == "ngwaf_alert_microsoft_teams_sanitized_empty" {
+						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
+						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_microsoft_teams_%s", sanitizedIDForName)
+					}
+					
+					alertImportBlock := rootBody.AppendNewBlock("import", nil)
+					alertImportBody := alertImportBlock.Body()
+					alertImportBody.SetAttributeValue("id", cty.StringVal(importID))
+					
+					alertImportBody.SetAttributeTraversal("to", hcl.Traversal{
+						hcl.TraverseRoot{Name: "fastly_ngwaf_alert_microsoft_teams_integration"},
+						hcl.TraverseAttr{Name: tfAlertResourceName},
+					})
+					rootBody.AppendNewline()
+					importCount++
+					
+					fmt.Printf("      Added import for NGWAF microsoft teams alert: %s (ID: %s) as fastly_ngwaf_alert_microsoft_teams_integration.%s\n", alert.Description, importID, tfAlertResourceName)
+				}
+			}
+			
+			// Opsgenie alerts
+			opsgenieAlerts, err := opsgenie.List(context.Background(), client, &opsgenie.ListInput{WorkspaceID: &workspace.WorkspaceID})
+			if err != nil {
+				log.Printf("Error listing NGWAF workspace opsgenie alerts for workspace %s: %v", workspace.WorkspaceID, err)
+			} else if len(opsgenieAlerts.Data) > 0 {
+				fmt.Printf("    Found %d opsgenie alert(s)\n", len(opsgenieAlerts.Data))
+				for _, alert := range opsgenieAlerts.Data {
+					if alert.ID == "" {
+						continue
+					}
+					
+					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
+					
+					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_opsgenie")
+					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_opsgenie_unnamed" || tfAlertResourceName == "ngwaf_alert_opsgenie_sanitized_empty" {
+						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
+						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_opsgenie_%s", sanitizedIDForName)
+					}
+					
+					alertImportBlock := rootBody.AppendNewBlock("import", nil)
+					alertImportBody := alertImportBlock.Body()
+					alertImportBody.SetAttributeValue("id", cty.StringVal(importID))
+					
+					alertImportBody.SetAttributeTraversal("to", hcl.Traversal{
+						hcl.TraverseRoot{Name: "fastly_ngwaf_alert_opsgenie_integration"},
+						hcl.TraverseAttr{Name: tfAlertResourceName},
+					})
+					rootBody.AppendNewline()
+					importCount++
+					
+					fmt.Printf("      Added import for NGWAF opsgenie alert: %s (ID: %s) as fastly_ngwaf_alert_opsgenie_integration.%s\n", alert.Description, importID, tfAlertResourceName)
+				}
+			}
+			
+			// PagerDuty alerts
+			pagerdutyAlerts, err := pagerduty.List(context.Background(), client, &pagerduty.ListInput{WorkspaceID: &workspace.WorkspaceID})
+			if err != nil {
+				log.Printf("Error listing NGWAF workspace pagerduty alerts for workspace %s: %v", workspace.WorkspaceID, err)
+			} else if len(pagerdutyAlerts.Data) > 0 {
+				fmt.Printf("    Found %d pagerduty alert(s)\n", len(pagerdutyAlerts.Data))
+				for _, alert := range pagerdutyAlerts.Data {
+					if alert.ID == "" {
+						continue
+					}
+					
+					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
+					
+					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_pagerduty")
+					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_pagerduty_unnamed" || tfAlertResourceName == "ngwaf_alert_pagerduty_sanitized_empty" {
+						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
+						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_pagerduty_%s", sanitizedIDForName)
+					}
+					
+					alertImportBlock := rootBody.AppendNewBlock("import", nil)
+					alertImportBody := alertImportBlock.Body()
+					alertImportBody.SetAttributeValue("id", cty.StringVal(importID))
+					
+					alertImportBody.SetAttributeTraversal("to", hcl.Traversal{
+						hcl.TraverseRoot{Name: "fastly_ngwaf_alert_pagerduty_integration"},
+						hcl.TraverseAttr{Name: tfAlertResourceName},
+					})
+					rootBody.AppendNewline()
+					importCount++
+					
+					fmt.Printf("      Added import for NGWAF pagerduty alert: %s (ID: %s) as fastly_ngwaf_alert_pagerduty_integration.%s\n", alert.Description, importID, tfAlertResourceName)
+				}
+			}
+			
+			// Slack alerts
+			slackAlerts, err := slack.List(context.Background(), client, &slack.ListInput{WorkspaceID: &workspace.WorkspaceID})
+			if err != nil {
+				log.Printf("Error listing NGWAF workspace slack alerts for workspace %s: %v", workspace.WorkspaceID, err)
+			} else if len(slackAlerts.Data) > 0 {
+				fmt.Printf("    Found %d slack alert(s)\n", len(slackAlerts.Data))
+				for _, alert := range slackAlerts.Data {
+					if alert.ID == "" {
+						continue
+					}
+					
+					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
+					
+					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_slack")
+					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_slack_unnamed" || tfAlertResourceName == "ngwaf_alert_slack_sanitized_empty" {
+						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
+						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_slack_%s", sanitizedIDForName)
+					}
+					
+					alertImportBlock := rootBody.AppendNewBlock("import", nil)
+					alertImportBody := alertImportBlock.Body()
+					alertImportBody.SetAttributeValue("id", cty.StringVal(importID))
+					
+					alertImportBody.SetAttributeTraversal("to", hcl.Traversal{
+						hcl.TraverseRoot{Name: "fastly_ngwaf_alert_slack_integration"},
+						hcl.TraverseAttr{Name: tfAlertResourceName},
+					})
+					rootBody.AppendNewline()
+					importCount++
+					
+					fmt.Printf("      Added import for NGWAF slack alert: %s (ID: %s) as fastly_ngwaf_alert_slack_integration.%s\n", alert.Description, importID, tfAlertResourceName)
+				}
+			}
+			
+			// Webhook alerts
+			webhookAlerts, err := webhook.List(context.Background(), client, &webhook.ListInput{WorkspaceID: &workspace.WorkspaceID})
+			if err != nil {
+				log.Printf("Error listing NGWAF workspace webhook alerts for workspace %s: %v", workspace.WorkspaceID, err)
+			} else if len(webhookAlerts.Data) > 0 {
+				fmt.Printf("    Found %d webhook alert(s)\n", len(webhookAlerts.Data))
+				for _, alert := range webhookAlerts.Data {
+					if alert.ID == "" {
+						continue
+					}
+					
+					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
+					
+					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_webhook")
+					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_webhook_unnamed" || tfAlertResourceName == "ngwaf_alert_webhook_sanitized_empty" {
+						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
+						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_webhook_%s", sanitizedIDForName)
+					}
+					
+					alertImportBlock := rootBody.AppendNewBlock("import", nil)
+					alertImportBody := alertImportBlock.Body()
+					alertImportBody.SetAttributeValue("id", cty.StringVal(importID))
+					
+					alertImportBody.SetAttributeTraversal("to", hcl.Traversal{
+						hcl.TraverseRoot{Name: "fastly_ngwaf_alert_webhook_integration"},
+						hcl.TraverseAttr{Name: tfAlertResourceName},
+					})
+					rootBody.AppendNewline()
+					importCount++
+					
+					fmt.Printf("      Added import for NGWAF webhook alert: %s (ID: %s) as fastly_ngwaf_alert_webhook_integration.%s\n", alert.Description, importID, tfAlertResourceName)
+				}
+			}
+			
+			// Redactions
+			workspaceRedactions, err := redactions.List(context.Background(), client, &redactions.ListInput{WorkspaceID: &workspace.WorkspaceID})
+			if err != nil {
+				log.Printf("Error listing NGWAF workspace redactions for workspace %s: %v", workspace.WorkspaceID, err)
+			} else if len(workspaceRedactions.Data) > 0 {
+				fmt.Printf("    Found %d redaction(s)\n", len(workspaceRedactions.Data))
+				for _, redaction := range workspaceRedactions.Data {
+					if redaction.RedactionID == "" {
+						continue
+					}
+					
+					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, redaction.RedactionID)
+					
+					tfRedactionResourceName := sanitizeForTerraformResourceName(redaction.Field, "ngwaf_redaction")
+					if redaction.Field == "" || tfRedactionResourceName == "ngwaf_redaction_unnamed" || tfRedactionResourceName == "ngwaf_redaction_sanitized_empty" {
+						sanitizedIDForName := sanitizeForTerraformResourceName(redaction.RedactionID, "redaction")
+						tfRedactionResourceName = fmt.Sprintf("ngwaf_redaction_%s", sanitizedIDForName)
+					}
+					
+					redactionImportBlock := rootBody.AppendNewBlock("import", nil)
+					redactionImportBody := redactionImportBlock.Body()
+					redactionImportBody.SetAttributeValue("id", cty.StringVal(importID))
+					
+					redactionImportBody.SetAttributeTraversal("to", hcl.Traversal{
+						hcl.TraverseRoot{Name: "fastly_ngwaf_redaction"},
+						hcl.TraverseAttr{Name: tfRedactionResourceName},
+					})
+					rootBody.AppendNewline()
+					importCount++
+					
+					fmt.Printf("      Added import for NGWAF redaction: %s (ID: %s) as fastly_ngwaf_redaction.%s\n", redaction.Field, importID, tfRedactionResourceName)
+				}
+			}
+			
+			// Thresholds
+			workspaceThresholds, err := thresholds.List(context.Background(), client, &thresholds.ListInput{WorkspaceID: &workspace.WorkspaceID})
+			if err != nil {
+				log.Printf("Error listing NGWAF workspace thresholds for workspace %s: %v", workspace.WorkspaceID, err)
+			} else if len(workspaceThresholds.Data) > 0 {
+				fmt.Printf("    Found %d threshold(s)\n", len(workspaceThresholds.Data))
+				for _, threshold := range workspaceThresholds.Data {
+					if threshold.ThresholdID == "" {
+						continue
+					}
+					
+					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, threshold.ThresholdID)
+					
+					tfThresholdResourceName := sanitizeForTerraformResourceName(threshold.Name, "ngwaf_thresholds")
+					if threshold.Name == "" || tfThresholdResourceName == "ngwaf_thresholds_unnamed" || tfThresholdResourceName == "ngwaf_thresholds_sanitized_empty" {
+						sanitizedIDForName := sanitizeForTerraformResourceName(threshold.ThresholdID, "threshold")
+						tfThresholdResourceName = fmt.Sprintf("ngwaf_thresholds_%s", sanitizedIDForName)
+					}
+					
+					thresholdImportBlock := rootBody.AppendNewBlock("import", nil)
+					thresholdImportBody := thresholdImportBlock.Body()
+					thresholdImportBody.SetAttributeValue("id", cty.StringVal(importID))
+					
+					thresholdImportBody.SetAttributeTraversal("to", hcl.Traversal{
+						hcl.TraverseRoot{Name: "fastly_ngwaf_thresholds"},
+						hcl.TraverseAttr{Name: tfThresholdResourceName},
+					})
+					rootBody.AppendNewline()
+					importCount++
+					
+					fmt.Printf("      Added import for NGWAF threshold: %s (ID: %s) as fastly_ngwaf_thresholds.%s\n", threshold.Name, importID, tfThresholdResourceName)
+				}
+			}
+			
+			// Virtual Patches
+			workspaceVirtualPatches, err := virtualpatches.List(context.Background(), client, &virtualpatches.ListInput{WorkspaceID: &workspace.WorkspaceID})
+			if err != nil {
+				log.Printf("Error listing NGWAF workspace virtual patches for workspace %s: %v", workspace.WorkspaceID, err)
+			} else if len(workspaceVirtualPatches.Data) > 0 {
+				fmt.Printf("    Found %d virtual patch(es)\n", len(workspaceVirtualPatches.Data))
+				for _, virtualPatch := range workspaceVirtualPatches.Data {
+					if virtualPatch.ID == "" {
+						continue
+					}
+					
+					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, virtualPatch.ID)
+					
+					tfVirtualPatchResourceName := sanitizeForTerraformResourceName(virtualPatch.Description, "ngwaf_virtual_patches")
+					if virtualPatch.Description == "" || tfVirtualPatchResourceName == "ngwaf_virtual_patches_unnamed" || tfVirtualPatchResourceName == "ngwaf_virtual_patches_sanitized_empty" {
+						sanitizedIDForName := sanitizeForTerraformResourceName(virtualPatch.ID, "virtual_patch")
+						tfVirtualPatchResourceName = fmt.Sprintf("ngwaf_virtual_patches_%s", sanitizedIDForName)
+					}
+					
+					virtualPatchImportBlock := rootBody.AppendNewBlock("import", nil)
+					virtualPatchImportBody := virtualPatchImportBlock.Body()
+					virtualPatchImportBody.SetAttributeValue("id", cty.StringVal(importID))
+					
+					virtualPatchImportBody.SetAttributeTraversal("to", hcl.Traversal{
+						hcl.TraverseRoot{Name: "fastly_ngwaf_virtual_patches"},
+						hcl.TraverseAttr{Name: tfVirtualPatchResourceName},
+					})
+					rootBody.AppendNewline()
+					importCount++
+					
+					fmt.Printf("      Added import for NGWAF virtual patch: %s (ID: %s) as fastly_ngwaf_virtual_patches.%s\n", virtualPatch.Description, importID, tfVirtualPatchResourceName)
+				}
 			}
 		}
 	}

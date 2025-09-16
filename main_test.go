@@ -98,6 +98,50 @@ func TestSanitizeForTerraformResourceName(t *testing.T) {
 			prefix:   "signal",
 			expected: "signal_abc123_def456",
 		},
+		// Test cases for NGWAF alert integrations
+		{
+			name:     "normal alert description",
+			input:    "Critical Performance Alert",
+			prefix:   "ngwaf_alert_datadog",
+			expected: "critical_performance_alert",
+		},
+		{
+			name:     "empty alert description",
+			input:    "",
+			prefix:   "ngwaf_alert_slack",
+			expected: "ngwaf_alert_slack_unnamed",
+		},
+		{
+			name:     "alert ID for fallback",
+			input:    "alert-uuid-123",
+			prefix:   "alert",
+			expected: "alert_uuid_123",
+		},
+		// Test cases for NGWAF workspace resources
+		{
+			name:     "normal redaction field",
+			input:    "user_password",
+			prefix:   "ngwaf_redaction",
+			expected: "user_password",
+		},
+		{
+			name:     "empty redaction field",
+			input:    "",
+			prefix:   "ngwaf_redaction",
+			expected: "ngwaf_redaction_unnamed",
+		},
+		{
+			name:     "normal threshold name",
+			input:    "Rate Limit Threshold",
+			prefix:   "ngwaf_thresholds",
+			expected: "rate_limit_threshold",
+		},
+		{
+			name:     "normal virtual patch description",
+			input:    "SQL Injection Protection",
+			prefix:   "ngwaf_virtual_patches",
+			expected: "sql_injection_protection",
+		},
 	}
 
 	for _, tt := range tests {
