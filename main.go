@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -10,9 +11,10 @@ import (
 	// IMPORTANT: Ensure your go.mod file correctly references github.com/fastly/go-fastly/v10
 	// If errors persist, try running:
 	// go clean -modcache
-	// go get -u github.com/fastly/go-fastly/v10/fastly
+	// go get -u github.com/fastly/go-fastly/v11/fastly
 	// go mod tidy
-	"github.com/fastly/go-fastly/v10/fastly"
+	"github.com/fastly/go-fastly/v11/fastly"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
@@ -70,7 +72,7 @@ func main() {
 	listServicesInput := &fastly.ListServicesInput{}
 
 	fmt.Println("Fetching Fastly services...")
-	services, err := client.ListServices(listServicesInput)
+	services, err := client.ListServices(context.Background(), listServicesInput)
 	if err != nil {
 		log.Fatalf("Error listing Fastly services: %v", err)
 	}
@@ -143,7 +145,7 @@ func main() {
 		if serviceType == "vcl" {
 			fmt.Printf("Processing VCL service: %s (ID: %s) for dynamic snippets...\n", serviceName, serviceIDValue)
 
-			serviceDetails, err := client.GetService(&fastly.GetServiceInput{ServiceID: serviceIDValue})
+			serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceIDValue})
 			if err != nil {
 				log.Printf("Error fetching service details for service ID %s: %v. Skipping dynamic snippets.", serviceIDValue, err)
 				continue
@@ -197,7 +199,7 @@ func main() {
 				continue
 			}
 
-			allSnippets, err := client.ListSnippets(&fastly.ListSnippetsInput{
+			allSnippets, err := client.ListSnippets(context.Background(), &fastly.ListSnippetsInput{
 				ServiceID:      serviceIDValue,
 				ServiceVersion: activeVersionNumber,
 			})
