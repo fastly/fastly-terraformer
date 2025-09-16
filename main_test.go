@@ -154,3 +154,81 @@ func TestSanitizeForTerraformResourceName(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateWorkspacePrefixedResourceName(t *testing.T) {
+	tests := []struct {
+		name         string
+		workspaceID  string
+		resourceName string
+		resourceID   string
+		basePrefix   string
+		expected     string
+	}{
+		{
+			name:         "normal workspace and resource names",
+			workspaceID:  "prod_tf_ngwaf_site",
+			resourceName: "SQL Injection Protection",
+			resourceID:   "CVE-2025-12345",
+			basePrefix:   "ngwaf_virtual_patches",
+			expected:     "prod_tf_ngwaf_site_sql_injection_protection",
+		},
+		{
+			name:         "workspace ID with special chars and empty resource name",
+			workspaceID:  "prod-workspace-123",
+			resourceName: "",
+			resourceID:   "alert-uuid-456",
+			basePrefix:   "ngwaf_alert_slack",
+			expected:     "prod_workspace_123_alert_uuid_456",
+		},
+		{
+			name:         "complex workspace ID and resource name",
+			workspaceID:  "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+			resourceName: "Critical Performance Alert",
+			resourceID:   "alert-789",
+			basePrefix:   "ngwaf_alert_datadog",
+			expected:     "a1b2c3d4_e5f6_7890_abcd_ef1234567890_critical_performance_alert",
+		},
+		{
+			name:         "workspace with numbers and threshold",
+			workspaceID:  "123workspace",
+			resourceName: "Rate Limit Threshold",
+			resourceID:   "threshold-abc",
+			basePrefix:   "ngwaf_thresholds",
+			expected:     "tf_123workspace_rate_limit_threshold",
+		},
+		{
+			name:         "redaction field with underscores",
+			workspaceID:  "dev_workspace",
+			resourceName: "user_password",
+			resourceID:   "redaction-123",
+			basePrefix:   "ngwaf_redaction",
+			expected:     "dev_workspace_user_password",
+		},
+		{
+			name:         "empty resource name falls back to ID",
+			workspaceID:  "test_ws",
+			resourceName: "",
+			resourceID:   "virtual-patch-456",
+			basePrefix:   "ngwaf_virtual_patches",
+			expected:     "test_ws_virtual_patch_456",
+		},
+		{
+			name:         "resource name with problematic characters",
+			workspaceID:  "workspace-one",
+			resourceName: "Test-Alert!@#$%",
+			resourceID:   "alert-999",
+			basePrefix:   "ngwaf_alert_webhook",
+			expected:     "workspace_one_test_alert",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := generateWorkspacePrefixedResourceName(tt.workspaceID, tt.resourceName, tt.resourceID, tt.basePrefix)
+			if result != tt.expected {
+				t.Errorf("generateWorkspacePrefixedResourceName(%q, %q, %q, %q) = %q, want %q", 
+					tt.workspaceID, tt.resourceName, tt.resourceID, tt.basePrefix, result, tt.expected)
+			}
+		})
+	}
+}

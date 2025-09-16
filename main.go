@@ -72,6 +72,34 @@ func sanitizeForTerraformResourceName(name, defaultPrefix string) string {
 	return s
 }
 
+// generateWorkspacePrefixedResourceName creates a workspace-prefixed Terraform resource name 
+// for workspace-scoped NGWAF resources to prevent naming conflicts.
+// Format: {sanitized_workspace_id}_{resource_name}
+func generateWorkspacePrefixedResourceName(workspaceID, resourceName, resourceID, basePrefix string) string {
+	// Sanitize the workspace ID to use as prefix
+	sanitizedWorkspaceID := sanitizeForTerraformResourceName(workspaceID, "ws")
+	
+	// Generate the base resource name
+	baseResourceName := sanitizeForTerraformResourceName(resourceName, basePrefix)
+	
+	// If the resource name is empty or problematic, use the resource ID as fallback
+	if resourceName == "" || baseResourceName == basePrefix+"_unnamed" || baseResourceName == basePrefix+"_sanitized_empty" {
+		sanitizedIDForName := sanitizeForTerraformResourceName(resourceID, strings.TrimPrefix(basePrefix, "ngwaf_"))
+		baseResourceName = fmt.Sprintf("%s_%s", basePrefix, sanitizedIDForName)
+	}
+	
+	// Remove the base prefix since we'll be adding the workspace prefix
+	if strings.HasPrefix(baseResourceName, basePrefix+"_") {
+		baseResourceName = strings.TrimPrefix(baseResourceName, basePrefix+"_")
+	} else if baseResourceName == basePrefix {
+		// This shouldn't happen with our logic above, but handle it safely
+		baseResourceName = "resource"
+	}
+	
+	// Combine workspace prefix with resource name
+	return fmt.Sprintf("%s_%s", sanitizedWorkspaceID, baseResourceName)
+}
+
 func main() {
 	// --- 1. Initialize Fastly Client ---
 	apiToken := os.Getenv("FASTLY_API_TOKEN")
@@ -502,12 +530,13 @@ func main() {
 					// Use workspace ID + alert ID as composite import ID
 					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
 					
-					// Sanitize the alert description for the Terraform resource name
-					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_datadog")
-					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_datadog_unnamed" || tfAlertResourceName == "ngwaf_alert_datadog_sanitized_empty" {
-						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
-						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_datadog_%s", sanitizedIDForName)
-					}
+					// Generate workspace-prefixed resource name to prevent conflicts
+					tfAlertResourceName := generateWorkspacePrefixedResourceName(
+						workspace.WorkspaceID,
+						alert.Description,
+						alert.ID,
+						"ngwaf_alert_datadog",
+					)
 					
 					alertImportBlock := rootBody.AppendNewBlock("import", nil)
 					alertImportBody := alertImportBlock.Body()
@@ -537,11 +566,13 @@ func main() {
 					
 					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
 					
-					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_jira")
-					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_jira_unnamed" || tfAlertResourceName == "ngwaf_alert_jira_sanitized_empty" {
-						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
-						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_jira_%s", sanitizedIDForName)
-					}
+					// Generate workspace-prefixed resource name to prevent conflicts
+					tfAlertResourceName := generateWorkspacePrefixedResourceName(
+						workspace.WorkspaceID,
+						alert.Description,
+						alert.ID,
+						"ngwaf_alert_jira",
+					)
 					
 					alertImportBlock := rootBody.AppendNewBlock("import", nil)
 					alertImportBody := alertImportBlock.Body()
@@ -571,11 +602,13 @@ func main() {
 					
 					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
 					
-					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_mailing_list")
-					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_mailing_list_unnamed" || tfAlertResourceName == "ngwaf_alert_mailing_list_sanitized_empty" {
-						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
-						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_mailing_list_%s", sanitizedIDForName)
-					}
+					// Generate workspace-prefixed resource name to prevent conflicts
+					tfAlertResourceName := generateWorkspacePrefixedResourceName(
+						workspace.WorkspaceID,
+						alert.Description,
+						alert.ID,
+						"ngwaf_alert_mailing_list",
+					)
 					
 					alertImportBlock := rootBody.AppendNewBlock("import", nil)
 					alertImportBody := alertImportBlock.Body()
@@ -605,11 +638,13 @@ func main() {
 					
 					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
 					
-					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_microsoft_teams")
-					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_microsoft_teams_unnamed" || tfAlertResourceName == "ngwaf_alert_microsoft_teams_sanitized_empty" {
-						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
-						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_microsoft_teams_%s", sanitizedIDForName)
-					}
+					// Generate workspace-prefixed resource name to prevent conflicts
+					tfAlertResourceName := generateWorkspacePrefixedResourceName(
+						workspace.WorkspaceID,
+						alert.Description,
+						alert.ID,
+						"ngwaf_alert_microsoft_teams",
+					)
 					
 					alertImportBlock := rootBody.AppendNewBlock("import", nil)
 					alertImportBody := alertImportBlock.Body()
@@ -639,11 +674,13 @@ func main() {
 					
 					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
 					
-					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_opsgenie")
-					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_opsgenie_unnamed" || tfAlertResourceName == "ngwaf_alert_opsgenie_sanitized_empty" {
-						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
-						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_opsgenie_%s", sanitizedIDForName)
-					}
+					// Generate workspace-prefixed resource name to prevent conflicts
+					tfAlertResourceName := generateWorkspacePrefixedResourceName(
+						workspace.WorkspaceID,
+						alert.Description,
+						alert.ID,
+						"ngwaf_alert_opsgenie",
+					)
 					
 					alertImportBlock := rootBody.AppendNewBlock("import", nil)
 					alertImportBody := alertImportBlock.Body()
@@ -673,11 +710,13 @@ func main() {
 					
 					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
 					
-					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_pagerduty")
-					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_pagerduty_unnamed" || tfAlertResourceName == "ngwaf_alert_pagerduty_sanitized_empty" {
-						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
-						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_pagerduty_%s", sanitizedIDForName)
-					}
+					// Generate workspace-prefixed resource name to prevent conflicts
+					tfAlertResourceName := generateWorkspacePrefixedResourceName(
+						workspace.WorkspaceID,
+						alert.Description,
+						alert.ID,
+						"ngwaf_alert_pagerduty",
+					)
 					
 					alertImportBlock := rootBody.AppendNewBlock("import", nil)
 					alertImportBody := alertImportBlock.Body()
@@ -707,11 +746,13 @@ func main() {
 					
 					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
 					
-					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_slack")
-					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_slack_unnamed" || tfAlertResourceName == "ngwaf_alert_slack_sanitized_empty" {
-						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
-						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_slack_%s", sanitizedIDForName)
-					}
+					// Generate workspace-prefixed resource name to prevent conflicts
+					tfAlertResourceName := generateWorkspacePrefixedResourceName(
+						workspace.WorkspaceID,
+						alert.Description,
+						alert.ID,
+						"ngwaf_alert_slack",
+					)
 					
 					alertImportBlock := rootBody.AppendNewBlock("import", nil)
 					alertImportBody := alertImportBlock.Body()
@@ -741,11 +782,13 @@ func main() {
 					
 					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, alert.ID)
 					
-					tfAlertResourceName := sanitizeForTerraformResourceName(alert.Description, "ngwaf_alert_webhook")
-					if alert.Description == "" || tfAlertResourceName == "ngwaf_alert_webhook_unnamed" || tfAlertResourceName == "ngwaf_alert_webhook_sanitized_empty" {
-						sanitizedIDForName := sanitizeForTerraformResourceName(alert.ID, "alert")
-						tfAlertResourceName = fmt.Sprintf("ngwaf_alert_webhook_%s", sanitizedIDForName)
-					}
+					// Generate workspace-prefixed resource name to prevent conflicts
+					tfAlertResourceName := generateWorkspacePrefixedResourceName(
+						workspace.WorkspaceID,
+						alert.Description,
+						alert.ID,
+						"ngwaf_alert_webhook",
+					)
 					
 					alertImportBlock := rootBody.AppendNewBlock("import", nil)
 					alertImportBody := alertImportBlock.Body()
@@ -775,11 +818,13 @@ func main() {
 					
 					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, redaction.RedactionID)
 					
-					tfRedactionResourceName := sanitizeForTerraformResourceName(redaction.Field, "ngwaf_redaction")
-					if redaction.Field == "" || tfRedactionResourceName == "ngwaf_redaction_unnamed" || tfRedactionResourceName == "ngwaf_redaction_sanitized_empty" {
-						sanitizedIDForName := sanitizeForTerraformResourceName(redaction.RedactionID, "redaction")
-						tfRedactionResourceName = fmt.Sprintf("ngwaf_redaction_%s", sanitizedIDForName)
-					}
+					// Generate workspace-prefixed resource name to prevent conflicts
+					tfRedactionResourceName := generateWorkspacePrefixedResourceName(
+						workspace.WorkspaceID,
+						redaction.Field,
+						redaction.RedactionID,
+						"ngwaf_redaction",
+					)
 					
 					redactionImportBlock := rootBody.AppendNewBlock("import", nil)
 					redactionImportBody := redactionImportBlock.Body()
@@ -809,11 +854,13 @@ func main() {
 					
 					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, threshold.ThresholdID)
 					
-					tfThresholdResourceName := sanitizeForTerraformResourceName(threshold.Name, "ngwaf_thresholds")
-					if threshold.Name == "" || tfThresholdResourceName == "ngwaf_thresholds_unnamed" || tfThresholdResourceName == "ngwaf_thresholds_sanitized_empty" {
-						sanitizedIDForName := sanitizeForTerraformResourceName(threshold.ThresholdID, "threshold")
-						tfThresholdResourceName = fmt.Sprintf("ngwaf_thresholds_%s", sanitizedIDForName)
-					}
+					// Generate workspace-prefixed resource name to prevent conflicts
+					tfThresholdResourceName := generateWorkspacePrefixedResourceName(
+						workspace.WorkspaceID,
+						threshold.Name,
+						threshold.ThresholdID,
+						"ngwaf_thresholds",
+					)
 					
 					thresholdImportBlock := rootBody.AppendNewBlock("import", nil)
 					thresholdImportBody := thresholdImportBlock.Body()
@@ -843,11 +890,13 @@ func main() {
 					
 					importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, virtualPatch.ID)
 					
-					tfVirtualPatchResourceName := sanitizeForTerraformResourceName(virtualPatch.Description, "ngwaf_virtual_patches")
-					if virtualPatch.Description == "" || tfVirtualPatchResourceName == "ngwaf_virtual_patches_unnamed" || tfVirtualPatchResourceName == "ngwaf_virtual_patches_sanitized_empty" {
-						sanitizedIDForName := sanitizeForTerraformResourceName(virtualPatch.ID, "virtual_patch")
-						tfVirtualPatchResourceName = fmt.Sprintf("ngwaf_virtual_patches_%s", sanitizedIDForName)
-					}
+					// Generate workspace-prefixed resource name to prevent conflicts
+					tfVirtualPatchResourceName := generateWorkspacePrefixedResourceName(
+						workspace.WorkspaceID,
+						virtualPatch.Description,
+						virtualPatch.ID,
+						"ngwaf_virtual_patches",
+					)
 					
 					virtualPatchImportBlock := rootBody.AppendNewBlock("import", nil)
 					virtualPatchImportBody := virtualPatchImportBlock.Body()
