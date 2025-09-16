@@ -14,6 +14,7 @@ import (
 	// go get -u github.com/fastly/go-fastly/v11/fastly
 	// go mod tidy
 	"github.com/fastly/go-fastly/v11/fastly"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
@@ -88,6 +89,8 @@ func main() {
 	hclFile := hclwrite.NewEmptyFile()
 	rootBody := hclFile.Body()
 	importCount := 0
+
+	// Process Fastly services (VCL, Compute) and their dynamic snippets
 
 	for _, service := range services { // service is of type *fastly.Service
 		var serviceIDValue string
@@ -277,6 +280,51 @@ func main() {
 		}
 	}
 
+	// --- 4. Process NGWAF Workspaces ---
+	fmt.Println("\nFetching NGWAF workspaces...")
+	ngwafWorkspaces, err := workspaces.List(context.Background(), client, &workspaces.ListInput{})
+	if err != nil {
+		log.Printf("Error listing NGWAF workspaces: %v. Skipping NGWAF workspace imports.", err)
+	} else {
+		if len(ngwafWorkspaces.Data) == 0 {
+			fmt.Println("No NGWAF workspaces found for this account.")
+		} else {
+			fmt.Printf("Found %d NGWAF workspace(s). Adding to import.tf...\n", len(ngwafWorkspaces.Data))
+			
+			for _, workspace := range ngwafWorkspaces.Data {
+				if workspace.WorkspaceID == "" {
+					log.Printf("Skipping NGWAF workspace with empty ID (Name: %s)\n", workspace.Name)
+					continue
+				}
+
+				// Sanitize the workspace name for the Terraform resource
+				tfWorkspaceResourceName := sanitizeForTerraformResourceName(workspace.Name, "ngwaf_workspace")
+				if workspace.Name == "" || tfWorkspaceResourceName == "ngwaf_workspace_unnamed" || tfWorkspaceResourceName == "ngwaf_workspace_sanitized_empty" {
+					// If original workspace name was empty or problematic, use sanitized ID for a more stable name
+					sanitizedIDForName := sanitizeForTerraformResourceName(workspace.WorkspaceID, "ws")
+					tfWorkspaceResourceName = fmt.Sprintf("ngwaf_workspace_%s", sanitizedIDForName)
+				}
+
+				// Create the import block for the NGWAF workspace
+				workspaceImportBlock := rootBody.AppendNewBlock("import", nil)
+				workspaceImportBody := workspaceImportBlock.Body()
+				workspaceImportBody.SetAttributeValue("id", cty.StringVal(workspace.WorkspaceID))
+
+				// Set the Terraform resource type and name
+				// Note: Using fastly_ngwaf_workspace based on Fastly provider conventions
+				// This should match the actual Terraform provider resource name for NGWAF workspaces
+				workspaceImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_ngwaf_workspace"},
+					hcl.TraverseAttr{Name: tfWorkspaceResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("  Added import for NGWAF workspace: %s (ID: %s) as fastly_ngwaf_workspace.%s\n", workspace.Name, workspace.WorkspaceID, tfWorkspaceResourceName)
+			}
+		}
+	}
+
 	outputPath := "./import.tf"
 	err = os.WriteFile(outputPath, hclFile.Bytes(), 0644)
 	if err != nil {
@@ -303,5 +351,19 @@ func main() {
 		fmt.Printf("  Name: %s\n", name)
 		fmt.Printf("  Type: %s\n", typeStr)
 		fmt.Println("------------------------------------")
+	}
+	
+	// Add NGWAF workspace summary
+	if ngwafWorkspaces != nil && len(ngwafWorkspaces.Data) > 0 {
+		fmt.Println("\n--- NGWAF Workspace Details Summary (for reference) ---")
+		fmt.Println("------------------------------------")
+		for i, workspace := range ngwafWorkspaces.Data {
+			fmt.Printf("NGWAF Workspace %d:\n", i+1)
+			fmt.Printf("  ID:          %s\n", workspace.WorkspaceID)
+			fmt.Printf("  Name:        %s\n", workspace.Name)
+			fmt.Printf("  Description: %s\n", workspace.Description)
+			fmt.Printf("  Mode:        %s\n", workspace.Mode)
+			fmt.Println("------------------------------------")
+		}
 	}
 }

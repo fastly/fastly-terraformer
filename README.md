@@ -6,6 +6,7 @@ Things that somewhat work so far.
 - [x] VCL Services
 - [x] Compute Services
 - [x] Dynamic Snippets
+- [x] NGWAF Workspaces
 
 # Quickstart
 
