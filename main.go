@@ -14,6 +14,10 @@ import (
 	// go get -u github.com/fastly/go-fastly/v11/fastly
 	// go mod tidy
 	"github.com/fastly/go-fastly/v11/fastly"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/common"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/lists"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/rules"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/signals"
 	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces"
 
 	"github.com/hashicorp/hcl/v2"
@@ -325,6 +329,142 @@ func main() {
 		}
 	}
 
+	// --- 5. Process NGWAF Account Lists ---
+	fmt.Println("\nFetching NGWAF account lists...")
+	accountScope := &common.Scope{
+		Type:      common.ScopeTypeAccount,
+		AppliesTo: []string{"*"},
+	}
+	
+	ngwafLists, err := lists.ListLists(context.Background(), client, &lists.ListInput{Scope: accountScope})
+	if err != nil {
+		log.Printf("Error listing NGWAF account lists: %v. Skipping NGWAF list imports.", err)
+	} else {
+		if len(ngwafLists.Data) == 0 {
+			fmt.Println("No NGWAF account lists found for this account.")
+		} else {
+			fmt.Printf("Found %d NGWAF account list(s). Adding to import.tf...\n", len(ngwafLists.Data))
+			
+			for _, list := range ngwafLists.Data {
+				if list.ListID == "" {
+					log.Printf("Skipping NGWAF account list with empty ID (Name: %s)\n", list.Name)
+					continue
+				}
+
+				// Sanitize the list name for the Terraform resource
+				tfListResourceName := sanitizeForTerraformResourceName(list.Name, "ngwaf_account_list")
+				if list.Name == "" || tfListResourceName == "ngwaf_account_list_unnamed" || tfListResourceName == "ngwaf_account_list_sanitized_empty" {
+					// If original list name was empty or problematic, use sanitized ID for a more stable name
+					sanitizedIDForName := sanitizeForTerraformResourceName(list.ListID, "list")
+					tfListResourceName = fmt.Sprintf("ngwaf_account_list_%s", sanitizedIDForName)
+				}
+
+				// Create the import block for the NGWAF account list
+				listImportBlock := rootBody.AppendNewBlock("import", nil)
+				listImportBody := listImportBlock.Body()
+				listImportBody.SetAttributeValue("id", cty.StringVal(list.ListID))
+
+				// Set the Terraform resource type and name
+				listImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_ngwaf_account_list"},
+					hcl.TraverseAttr{Name: tfListResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("  Added import for NGWAF account list: %s (ID: %s) as fastly_ngwaf_account_list.%s\n", list.Name, list.ListID, tfListResourceName)
+			}
+		}
+	}
+
+	// --- 6. Process NGWAF Account Rules ---
+	fmt.Println("\nFetching NGWAF account rules...")
+	
+	ngwafRules, err := rules.List(context.Background(), client, &rules.ListInput{Scope: accountScope})
+	if err != nil {
+		log.Printf("Error listing NGWAF account rules: %v. Skipping NGWAF rule imports.", err)
+	} else {
+		if len(ngwafRules.Data) == 0 {
+			fmt.Println("No NGWAF account rules found for this account.")
+		} else {
+			fmt.Printf("Found %d NGWAF account rule(s). Adding to import.tf...\n", len(ngwafRules.Data))
+			
+			for _, rule := range ngwafRules.Data {
+				if rule.RuleID == "" {
+					log.Printf("Skipping NGWAF account rule with empty ID (Description: %s)\n", rule.Description)
+					continue
+				}
+
+				// Sanitize the rule description for the Terraform resource name
+				tfRuleResourceName := sanitizeForTerraformResourceName(rule.Description, "ngwaf_account_rule")
+				if rule.Description == "" || tfRuleResourceName == "ngwaf_account_rule_unnamed" || tfRuleResourceName == "ngwaf_account_rule_sanitized_empty" {
+					// If original rule description was empty or problematic, use sanitized ID for a more stable name
+					sanitizedIDForName := sanitizeForTerraformResourceName(rule.RuleID, "rule")
+					tfRuleResourceName = fmt.Sprintf("ngwaf_account_rule_%s", sanitizedIDForName)
+				}
+
+				// Create the import block for the NGWAF account rule
+				ruleImportBlock := rootBody.AppendNewBlock("import", nil)
+				ruleImportBody := ruleImportBlock.Body()
+				ruleImportBody.SetAttributeValue("id", cty.StringVal(rule.RuleID))
+
+				// Set the Terraform resource type and name
+				ruleImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_ngwaf_account_rule"},
+					hcl.TraverseAttr{Name: tfRuleResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("  Added import for NGWAF account rule: %s (ID: %s) as fastly_ngwaf_account_rule.%s\n", rule.Description, rule.RuleID, tfRuleResourceName)
+			}
+		}
+	}
+
+	// --- 7. Process NGWAF Account Signals ---
+	fmt.Println("\nFetching NGWAF account signals...")
+	
+	ngwafSignals, err := signals.List(context.Background(), client, &signals.ListInput{Scope: accountScope})
+	if err != nil {
+		log.Printf("Error listing NGWAF account signals: %v. Skipping NGWAF signal imports.", err)
+	} else {
+		if len(ngwafSignals.Data) == 0 {
+			fmt.Println("No NGWAF account signals found for this account.")
+		} else {
+			fmt.Printf("Found %d NGWAF account signal(s). Adding to import.tf...\n", len(ngwafSignals.Data))
+			
+			for _, signal := range ngwafSignals.Data {
+				if signal.SignalID == "" {
+					log.Printf("Skipping NGWAF account signal with empty ID (Name: %s)\n", signal.Name)
+					continue
+				}
+
+				// Sanitize the signal name for the Terraform resource
+				tfSignalResourceName := sanitizeForTerraformResourceName(signal.Name, "ngwaf_account_signal")
+				if signal.Name == "" || tfSignalResourceName == "ngwaf_account_signal_unnamed" || tfSignalResourceName == "ngwaf_account_signal_sanitized_empty" {
+					// If original signal name was empty or problematic, use sanitized ID for a more stable name
+					sanitizedIDForName := sanitizeForTerraformResourceName(signal.SignalID, "signal")
+					tfSignalResourceName = fmt.Sprintf("ngwaf_account_signal_%s", sanitizedIDForName)
+				}
+
+				// Create the import block for the NGWAF account signal
+				signalImportBlock := rootBody.AppendNewBlock("import", nil)
+				signalImportBody := signalImportBlock.Body()
+				signalImportBody.SetAttributeValue("id", cty.StringVal(signal.SignalID))
+
+				// Set the Terraform resource type and name
+				signalImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_ngwaf_account_signal"},
+					hcl.TraverseAttr{Name: tfSignalResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("  Added import for NGWAF account signal: %s (ID: %s) as fastly_ngwaf_account_signal.%s\n", signal.Name, signal.SignalID, tfSignalResourceName)
+			}
+		}
+	}
+
 	outputPath := "./import.tf"
 	err = os.WriteFile(outputPath, hclFile.Bytes(), 0644)
 	if err != nil {
@@ -363,6 +503,51 @@ func main() {
 			fmt.Printf("  Name:        %s\n", workspace.Name)
 			fmt.Printf("  Description: %s\n", workspace.Description)
 			fmt.Printf("  Mode:        %s\n", workspace.Mode)
+			fmt.Println("------------------------------------")
+		}
+	}
+	
+	// Add NGWAF account lists summary
+	if ngwafLists != nil && len(ngwafLists.Data) > 0 {
+		fmt.Println("\n--- NGWAF Account Lists Summary (for reference) ---")
+		fmt.Println("------------------------------------")
+		for i, list := range ngwafLists.Data {
+			fmt.Printf("NGWAF Account List %d:\n", i+1)
+			fmt.Printf("  ID:          %s\n", list.ListID)
+			fmt.Printf("  Name:        %s\n", list.Name)
+			fmt.Printf("  Description: %s\n", list.Description)
+			fmt.Printf("  Type:        %s\n", list.Type)
+			fmt.Printf("  ReferenceID: %s\n", list.ReferenceID)
+			fmt.Println("------------------------------------")
+		}
+	}
+	
+	// Add NGWAF account rules summary
+	if ngwafRules != nil && len(ngwafRules.Data) > 0 {
+		fmt.Println("\n--- NGWAF Account Rules Summary (for reference) ---")
+		fmt.Println("------------------------------------")
+		for i, rule := range ngwafRules.Data {
+			fmt.Printf("NGWAF Account Rule %d:\n", i+1)
+			fmt.Printf("  ID:              %s\n", rule.RuleID)
+			fmt.Printf("  Description:     %s\n", rule.Description)
+			fmt.Printf("  Type:            %s\n", rule.Type)
+			fmt.Printf("  Enabled:         %t\n", rule.Enabled)
+			fmt.Printf("  GroupOperator:   %s\n", rule.GroupOperator)
+			fmt.Printf("  RequestLogging:  %s\n", rule.RequestLogging)
+			fmt.Println("------------------------------------")
+		}
+	}
+	
+	// Add NGWAF account signals summary
+	if ngwafSignals != nil && len(ngwafSignals.Data) > 0 {
+		fmt.Println("\n--- NGWAF Account Signals Summary (for reference) ---")
+		fmt.Println("------------------------------------")
+		for i, signal := range ngwafSignals.Data {
+			fmt.Printf("NGWAF Account Signal %d:\n", i+1)
+			fmt.Printf("  ID:          %s\n", signal.SignalID)
+			fmt.Printf("  Name:        %s\n", signal.Name)
+			fmt.Printf("  Description: %s\n", signal.Description)
+			fmt.Printf("  ReferenceID: %s\n", signal.ReferenceID)
 			fmt.Println("------------------------------------")
 		}
 	}

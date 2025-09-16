@@ -7,6 +7,9 @@ Things that somewhat work so far.
 - [x] Compute Services
 - [x] Dynamic Snippets
 - [x] NGWAF Workspaces
+- [x] NGWAF Account Lists
+- [x] NGWAF Account Rules
+- [x] NGWAF Account Signals
 
 # Quickstart
 
