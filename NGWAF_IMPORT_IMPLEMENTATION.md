@@ -47,8 +47,9 @@ These resources use workspace-specific scopes instead of account-level scopes, a
 - Falls back to resource ID when names are empty or problematic
 - Applies sanitization for Terraform compatibility (alphanumeric + underscore only)
 - **NEW**: For workspace-scoped resources, prefixes resource names with sanitized workspace ID to prevent conflicts
-  - Format: `{sanitized_workspace_id}_{resource_name}`
-  - Example: `prod_tf_ngwaf_site_sql_injection_protection` instead of just `sql_injection_protection`
+  - Format: `{sanitized_workspace_id}_{resource_name}_{sanitized_resource_id}`
+  - Example: `prod_tf_ngwaf_site_sql_injection_protection_tf_67f92e6930d0ab5d50ceca89` 
+  - **UPDATED**: Always includes resource ID to ensure uniqueness when multiple resources have the same name
 
 ### API Integration
 - Uses Fastly Go SDK v11 NGWAF packages
