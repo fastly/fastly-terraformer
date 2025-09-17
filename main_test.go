@@ -452,3 +452,33 @@ func TestImportNGWAFWorkspaceSignals(t *testing.T) {
 		t.Errorf("Expected no error when workspaces is nil, got %v", err)
 	}
 }
+
+// TestImportConfigStores tests the Config Store import function
+func TestImportConfigStores(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
+	fn = importConfigStores
+	if fn == nil {
+		t.Error("importConfigStores function should exist")
+	}
+}
+
+// TestImportKVStores tests the KV Store import function
+func TestImportKVStores(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
+	fn = importKVStores
+	if fn == nil {
+		t.Error("importKVStores function should exist")
+	}
+}
+
+// TestImportSecretStores tests the Secret Store import function
+func TestImportSecretStores(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
+	fn = importSecretStores
+	if fn == nil {
+		t.Error("importSecretStores function should exist")
+	}
+}

@@ -17,6 +17,11 @@
 - ✅ **`fastly_service_compute`** - Compute (WASM) services  
 - ✅ **`fastly_service_dynamic_snippet_content`** - Dynamic snippets for VCL services
 
+### Fastly Store Resources
+- ✅ **`fastly_configstore`** - Config store resources
+- ✅ **`fastly_kvstore`** - Key-value store resources
+- ✅ **`fastly_secretstore`** - Secret store resources
+
 ### NGWAF Account-Level Resources
 - ✅ **`fastly_ngwaf_workspace`** - NGWAF workspace management
 - ✅ **`fastly_ngwaf_account_list`** - Account-level lists
@@ -70,9 +75,6 @@ The following Fastly provider resources are **not currently imported** by this t
 ### Additional Resources
 - ❌ **`fastly_user`** - User management
 - ❌ **`fastly_service_authorization`** - Service authorization tokens
-- ❌ **`fastly_configstore`** - Config store resources
-- ❌ **`fastly_secretstore`** - Secret store resources
-- ❌ **`fastly_kvstore`** - Key-value store resources
 
 ## Prerequisites
 
