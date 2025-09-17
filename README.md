@@ -13,7 +13,7 @@
 ## Supported Resources (Imported)
 
 ### Fastly Core Services
-- ✅ **`fastly_service_vcl`** - VCL services
+- ✅ **`fastly_service_vcl`** - VCL services and custom VCL files
 - ✅ **`fastly_service_compute`** - Compute (WASM) services  
 - ✅ **`fastly_service_dynamic_snippet_content`** - Dynamic snippets for VCL services
 - ✅ **`fastly_service_domain`** - Service domains
@@ -22,6 +22,9 @@
 - ✅ **`fastly_service_backend`** - Backend configurations
 - ✅ **`fastly_service_health_check`** - Health check configurations
 - ✅ **`fastly_service_director`** - Load balancing directors (VCL services only)
+- ✅ **`fastly_service_request_setting`** - Request settings
+- ✅ **`fastly_service_response_object`** - Response objects
+- ✅ **`fastly_service_snippet`** - Static VCL snippets
 
 ### Fastly Store Resources
 - ✅ **`fastly_configstore`** - Config store resources
@@ -64,10 +67,6 @@ The following Fastly provider resources are **not currently imported** by this t
 
 ### Core Fastly Resources
 - ❌ **`fastly_service_logging_*`** - Various logging endpoints (S3, Syslog, etc.)
-- ❌ **`fastly_service_request_setting`** - Request settings
-- ❌ **`fastly_service_response_object`** - Response objects
-- ❌ **`fastly_service_snippet`** - Static VCL snippets
-- ❌ **`fastly_service_vcl`** - Custom VCL configurations
 - ❌ **`fastly_service_waf_configuration`** - Legacy WAF configurations
 
 ### TLS and Security
