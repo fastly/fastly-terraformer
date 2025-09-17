@@ -548,9 +548,25 @@ func importServiceDomains(client *fastly.Client, rootBody *hclwrite.Body, servic
 			importID := fmt.Sprintf("%s/%s", serviceID, *domain.Name)
 
 			// Generate resource name using service and domain information
+			// Handle wildcard domains to avoid duplicate resource names when domains like 
+			// "*.livewaflove.com" and "livewaflove.com" would sanitize to the same value
 			sanitizedServiceID := sanitizeForTerraformResourceName(serviceID, "svc")
-			sanitizedDomainName := sanitizeForTerraformResourceName(*domain.Name, "domain")
-			tfDomainResourceName := fmt.Sprintf("service_%s_domain_%s", sanitizedServiceID, sanitizedDomainName)
+			
+			// Check if this is a wildcard domain and create appropriate identifier
+			domainIdentifier := *domain.Name
+			isWildcard := strings.HasPrefix(*domain.Name, "*.")
+			if isWildcard {
+				// For wildcard domains, prefix with "wildcard_" to ensure uniqueness
+				// Remove the "*." and replace with "wildcard_"
+				domainWithoutWildcard := strings.TrimPrefix(*domain.Name, "*.")
+				domainIdentifier = "wildcard_" + domainWithoutWildcard
+			}
+			
+			// Sanitize the domain identifier
+			sanitizedDomainIdentifier := sanitizeForTerraformResourceName(domainIdentifier, "domain")
+			
+			// Create the final resource name
+			tfDomainResourceName := fmt.Sprintf("service_%s_domain_%s", sanitizedServiceID, sanitizedDomainIdentifier)
 
 			domainImportBlock := rootBody.AppendNewBlock("import", nil)
 			domainImportBody := domainImportBlock.Body()
