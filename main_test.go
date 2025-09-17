@@ -822,3 +822,87 @@ func TestImportServiceAuthorizations(t *testing.T) {
 		t.Error("importServiceAuthorizations function should exist")
 	}
 }
+
+// TestImportServiceS3Logging tests the service S3 logging import function
+func TestImportServiceS3Logging(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
+	fn = importServiceS3Logging
+	if fn == nil {
+		t.Error("importServiceS3Logging function should exist")
+	}
+
+	// Test with nil/empty services
+	importCount, err := importServiceS3Logging(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+
+	// Test with empty services slice
+	importCount, err = importServiceS3Logging(nil, nil, []*fastly.Service{})
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is empty")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is empty, got %v", err)
+	}
+}
+
+// TestImportServiceSyslogLogging tests the service Syslog logging import function
+func TestImportServiceSyslogLogging(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
+	fn = importServiceSyslogLogging
+	if fn == nil {
+		t.Error("importServiceSyslogLogging function should exist")
+	}
+
+	// Test with nil/empty services
+	importCount, err := importServiceSyslogLogging(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+
+	// Test with empty services slice
+	importCount, err = importServiceSyslogLogging(nil, nil, []*fastly.Service{})
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is empty")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is empty, got %v", err)
+	}
+}
+
+// TestImportServiceDatadogLogging tests the service Datadog logging import function
+func TestImportServiceDatadogLogging(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
+	fn = importServiceDatadogLogging
+	if fn == nil {
+		t.Error("importServiceDatadogLogging function should exist")
+	}
+
+	// Test with nil/empty services
+	importCount, err := importServiceDatadogLogging(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+
+	// Test with empty services slice
+	importCount, err = importServiceDatadogLogging(nil, nil, []*fastly.Service{})
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is empty")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is empty, got %v", err)
+	}
+}

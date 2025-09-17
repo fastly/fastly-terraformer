@@ -25,6 +25,9 @@
 - ✅ **`fastly_service_request_setting`** - Request settings
 - ✅ **`fastly_service_response_object`** - Response objects
 - ✅ **`fastly_service_snippet`** - Static VCL snippets
+- ✅ **`fastly_service_logging_s3`** - S3 logging endpoints
+- ✅ **`fastly_service_logging_syslog`** - Syslog logging endpoints  
+- ✅ **`fastly_service_logging_datadog`** - Datadog logging endpoints
 
 ### Fastly Store Resources
 - ✅ **`fastly_configstore`** - Config store resources
@@ -70,7 +73,7 @@
 The following Fastly provider resources are **not currently imported** by this tool:
 
 ### Core Fastly Resources
-- ❌ **`fastly_service_logging_*`** - Various logging endpoints (S3, Syslog, etc.)
+- ❌ **`fastly_service_logging_*`** - Other logging endpoints (BigQuery, Splunk, Papertrail, etc.)
 - ❌ **`fastly_service_waf_configuration`** - Legacy WAF configurations
 
 ### TLS and Security
