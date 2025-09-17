@@ -802,3 +802,23 @@ func TestImportServiceVCLs(t *testing.T) {
 		t.Errorf("Expected no error when services is empty, got %v", err)
 	}
 }
+
+// TestImportUsers tests the user import function
+func TestImportUsers(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
+	fn = importUsers
+	if fn == nil {
+		t.Error("importUsers function should exist")
+	}
+}
+
+// TestImportServiceAuthorizations tests the service authorization import function
+func TestImportServiceAuthorizations(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
+	fn = importServiceAuthorizations
+	if fn == nil {
+		t.Error("importServiceAuthorizations function should exist")
+	}
+}

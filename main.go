@@ -1648,6 +1648,118 @@ func importServiceVCLs(client *fastly.Client, rootBody *hclwrite.Body, services 
 	return importCount, nil
 }
 
+// importUsers handles importing Fastly user resources
+func importUsers(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly users...")
+
+	users, err := client.ListCustomerUsers(context.Background(), &fastly.ListCustomerUsersInput{})
+	if err != nil {
+		log.Printf("Error listing users: %v. Skipping user imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if len(users) == 0 {
+		fmt.Println("No users found for this account.")
+	} else {
+		fmt.Printf("Found %d user(s). Adding to import.tf...\n", len(users))
+
+		for _, user := range users {
+			if user.UserID == nil || *user.UserID == "" {
+				log.Printf("Skipping user with empty ID\n")
+				continue
+			}
+
+			userID := *user.UserID
+			var userName string
+			if user.Name != nil {
+				userName = *user.Name
+			}
+
+			// Generate resource name using user name if available, otherwise use ID
+			var tfUserResourceName string
+			if userName != "" {
+				tfUserResourceName = sanitizeForTerraformResourceName(userName, "user")
+			} else {
+				tfUserResourceName = sanitizeForTerraformResourceName(userID, "user")
+			}
+
+			// Ensure uniqueness by adding user ID suffix
+			sanitizedUserID := sanitizeForTerraformResourceName(userID, "id")
+			tfUserResourceName = fmt.Sprintf("%s_%s", tfUserResourceName, sanitizedUserID)
+
+			userImportBlock := rootBody.AppendNewBlock("import", nil)
+			userImportBody := userImportBlock.Body()
+			userImportBody.SetAttributeValue("id", cty.StringVal(userID))
+
+			userImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_user"},
+				hcl.TraverseAttr{Name: tfUserResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("  Added import for user: %s (ID: %s) as fastly_user.%s\n", userName, userID, tfUserResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServiceAuthorizations handles importing Fastly service authorization resources
+func importServiceAuthorizations(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly service authorizations...")
+
+	serviceAuthorizations, err := client.ListServiceAuthorizations(context.Background(), &fastly.ListServiceAuthorizationsInput{})
+	if err != nil {
+		log.Printf("Error listing service authorizations: %v. Skipping service authorization imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if serviceAuthorizations == nil || len(serviceAuthorizations.Items) == 0 {
+		fmt.Println("No service authorizations found for this account.")
+	} else {
+		fmt.Printf("Found %d service authorization(s). Adding to import.tf...\n", len(serviceAuthorizations.Items))
+
+		for _, serviceAuth := range serviceAuthorizations.Items {
+			if serviceAuth.ID == "" {
+				log.Printf("Skipping service authorization with empty ID\n")
+				continue
+			}
+
+			serviceAuthID := serviceAuth.ID
+
+			// Generate resource name using service auth ID
+			tfServiceAuthResourceName := sanitizeForTerraformResourceName(serviceAuthID, "service_authorization")
+
+			serviceAuthImportBlock := rootBody.AppendNewBlock("import", nil)
+			serviceAuthImportBody := serviceAuthImportBlock.Body()
+			serviceAuthImportBody.SetAttributeValue("id", cty.StringVal(serviceAuthID))
+
+			serviceAuthImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_service_authorization"},
+				hcl.TraverseAttr{Name: tfServiceAuthResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			// Show service and user info if available
+			var serviceInfo, userInfo string
+			if serviceAuth.Service != nil && serviceAuth.Service.ID != "" {
+				serviceInfo = fmt.Sprintf("Service: %s", serviceAuth.Service.ID)
+			}
+			if serviceAuth.User != nil && serviceAuth.User.ID != "" {
+				userInfo = fmt.Sprintf("User: %s", serviceAuth.User.ID)
+			}
+
+			fmt.Printf("  Added import for service authorization: %s (%s, %s) as fastly_service_authorization.%s\n", serviceAuthID, serviceInfo, userInfo, tfServiceAuthResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
 // importNGWAFWorkspaceLists handles importing NGWAF workspace-scoped list resources
 func importNGWAFWorkspaceLists(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
 	importCount := 0
@@ -2626,7 +2738,18 @@ func main() {
 			importCount += tlsActivationImportCount
 		}
 
-		// --- 6. Process NGWAF Resources ---
+		// --- 6. Process User and Authorization Resources ---
+		userImportCount, err := importUsers(client, rootBody)
+		if err == nil {
+			importCount += userImportCount
+		}
+
+		serviceAuthorizationImportCount, err := importServiceAuthorizations(client, rootBody)
+		if err == nil {
+			importCount += serviceAuthorizationImportCount
+		}
+
+		// --- 7. Process NGWAF Resources ---
 		ngwafWorkspaces, workspaceImportCount, err := importNGWAFWorkspaces(client, rootBody)
 		if err == nil {
 			importCount += workspaceImportCount

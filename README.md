@@ -35,6 +35,10 @@
 - ✅ **`fastly_tls_subscription`** - TLS subscriptions
 - ✅ **`fastly_tls_activation`** - TLS certificate activations
 
+### Account-Level Resources
+- ✅ **`fastly_user`** - User management
+- ✅ **`fastly_service_authorization`** - Service authorization tokens
+
 ### NGWAF Account-Level Resources
 - ✅ **`fastly_ngwaf_workspace`** - NGWAF workspace management
 - ✅ **`fastly_ngwaf_account_list`** - Account-level lists
@@ -73,10 +77,6 @@ The following Fastly provider resources are **not currently imported** by this t
 - ❌ **`fastly_tls_certificate`** - TLS certificates
 - ❌ **`fastly_tls_configuration`** - TLS configurations  
 - ❌ **`fastly_tls_private_key`** - TLS private keys
-
-### Additional Resources
-- ❌ **`fastly_user`** - User management
-- ❌ **`fastly_service_authorization`** - Service authorization tokens
 
 ## Prerequisites
 
