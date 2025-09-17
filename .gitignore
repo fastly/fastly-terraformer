@@ -46,4 +46,3 @@ import.tf
 generated.tf
 mod
 fastly-terraformer
-fastly-terraformer
