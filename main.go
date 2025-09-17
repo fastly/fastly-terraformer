@@ -1096,6 +1096,117 @@ func importServiceHealthChecks(client *fastly.Client, rootBody *hclwrite.Body, s
 	return importCount, nil
 }
 
+// importServiceDirectors handles importing Fastly service director resources for all services
+func importServiceDirectors(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+	
+	if len(services) == 0 {
+		fmt.Println("No services available for director imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service directors...")
+
+	for _, service := range services {
+		if service.ServiceID == nil || *service.ServiceID == "" {
+			continue
+		}
+
+		serviceID := *service.ServiceID
+		serviceName := ""
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		// Only process VCL services as directors are VCL-specific
+		serviceType := ""
+		if service.Type != nil {
+			serviceType = *service.Type
+		}
+		if serviceType != "vcl" {
+			continue
+		}
+
+		fmt.Printf("  Fetching directors for VCL service: %s (ID: %s)\n", serviceName, serviceID)
+
+		// Get service details to find active version
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceID})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping directors.", serviceID, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion && serviceDetails.Versions != nil && len(serviceDetails.Versions) > 0 {
+			for _, v := range serviceDetails.Versions {
+				if v.Number != nil && v.Active != nil && *v.Active {
+					activeVersionNumber = *v.Number
+					foundActiveVersion = true
+					break
+				}
+			}
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping directors.", serviceID)
+			continue
+		}
+
+		directors, err := client.ListDirectors(context.Background(), &fastly.ListDirectorsInput{
+			ServiceID:      serviceID,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("  Error listing directors for service ID %s, version %d: %v", serviceID, activeVersionNumber, err)
+			continue
+		}
+
+		if len(directors) == 0 {
+			fmt.Printf("    No directors found for service %s\n", serviceID)
+			continue
+		}
+
+		fmt.Printf("    Found %d director(s) for service %s\n", len(directors), serviceID)
+
+		for _, director := range directors {
+			if director.Name == nil || *director.Name == "" {
+				log.Printf("Skipping director with empty name for service ID %s\n", serviceID)
+				continue
+			}
+
+			// Import ID format for service director is "service_id/director_name"
+			importID := fmt.Sprintf("%s/%s", serviceID, *director.Name)
+
+			// Generate resource name using service and director information
+			sanitizedServiceID := sanitizeForTerraformResourceName(serviceID, "svc")
+			sanitizedDirectorName := sanitizeForTerraformResourceName(*director.Name, "director")
+			tfDirectorResourceName := fmt.Sprintf("service_%s_director_%s", sanitizedServiceID, sanitizedDirectorName)
+
+			directorImportBlock := rootBody.AppendNewBlock("import", nil)
+			directorImportBody := directorImportBlock.Body()
+			directorImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+			directorImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_service_director"},
+				hcl.TraverseAttr{Name: tfDirectorResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("    Added import for service director: %s (Import ID: %s) as fastly_service_director.%s\n", *director.Name, importID, tfDirectorResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
 // importNGWAFWorkspaceLists handles importing NGWAF workspace-scoped list resources
 func importNGWAFWorkspaceLists(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
 	importCount := 0
@@ -2015,6 +2126,12 @@ func main() {
 		serviceHealthCheckImportCount, err := importServiceHealthChecks(client, rootBody, services)
 		if err == nil {
 			importCount += serviceHealthCheckImportCount
+		}
+
+		// Import service directors for VCL services
+		serviceDirectorImportCount, err := importServiceDirectors(client, rootBody, services)
+		if err == nil {
+			importCount += serviceDirectorImportCount
 		}
 
 		// --- 4. Process Store Resources ---

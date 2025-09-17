@@ -606,3 +606,22 @@ func TestImportServiceHealthChecks(t *testing.T) {
 		t.Errorf("Expected no error when services is nil, got %v", err)
 	}
 }
+
+// TestImportServiceDirectors tests the service director import function
+func TestImportServiceDirectors(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
+	fn = importServiceDirectors
+	if fn == nil {
+		t.Error("importServiceDirectors function should exist")
+	}
+
+	// Test with nil/empty services
+	importCount, err := importServiceDirectors(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+}

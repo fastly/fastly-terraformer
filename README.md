@@ -21,6 +21,7 @@
 - ✅ **`fastly_service_dictionary`** - Edge dictionaries (VCL services only)
 - ✅ **`fastly_service_backend`** - Backend configurations
 - ✅ **`fastly_service_health_check`** - Health check configurations
+- ✅ **`fastly_service_director`** - Load balancing directors (VCL services only)
 
 ### Fastly Store Resources
 - ✅ **`fastly_configstore`** - Config store resources
@@ -62,7 +63,6 @@
 The following Fastly provider resources are **not currently imported** by this tool:
 
 ### Core Fastly Resources
-- ❌ **`fastly_service_director`** - Load balancing directors
 - ❌ **`fastly_service_logging_*`** - Various logging endpoints (S3, Syslog, etc.)
 - ❌ **`fastly_service_request_setting`** - Request settings
 - ❌ **`fastly_service_response_object`** - Response objects
