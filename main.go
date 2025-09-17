@@ -318,6 +318,156 @@ func importNGWAFAccountSignals(client *fastly.Client, rootBody *hclwrite.Body) (
 	return ngwafSignals, importCount, nil
 }
 
+// importConfigStores handles importing Fastly Config Store resources
+func importConfigStores(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly Config Stores...")
+	
+	configStores, err := client.ListConfigStores(context.Background(), &fastly.ListConfigStoresInput{})
+	if err != nil {
+		log.Printf("Error listing Config Stores: %v. Skipping Config Store imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if len(configStores) == 0 {
+		fmt.Println("No Config Stores found for this account.")
+	} else {
+		fmt.Printf("Found %d Config Store(s). Adding to import.tf...\n", len(configStores))
+
+		for _, store := range configStores {
+			if store.StoreID == "" {
+				log.Printf("Skipping Config Store with empty ID (Name: %s)\n", store.Name)
+				continue
+			}
+
+			// Sanitize the store name for the Terraform resource
+			tfStoreResourceName := sanitizeForTerraformResourceName(store.Name, "configstore")
+			if store.Name == "" || tfStoreResourceName == "configstore_unnamed" || tfStoreResourceName == "configstore_sanitized_empty" {
+				// If original store name was empty or problematic, use sanitized ID for a more stable name
+				sanitizedIDForName := sanitizeForTerraformResourceName(store.StoreID, "store")
+				tfStoreResourceName = fmt.Sprintf("configstore_%s", sanitizedIDForName)
+			}
+
+			// Create the import block for the Config Store
+			storeImportBlock := rootBody.AppendNewBlock("import", nil)
+			storeImportBody := storeImportBlock.Body()
+			storeImportBody.SetAttributeValue("id", cty.StringVal(store.StoreID))
+
+			// Set the Terraform resource type and name
+			storeImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_configstore"},
+				hcl.TraverseAttr{Name: tfStoreResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("  Added import for Config Store: %s (ID: %s) as fastly_configstore.%s\n", store.Name, store.StoreID, tfStoreResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importKVStores handles importing Fastly KV Store resources
+func importKVStores(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly KV Stores...")
+	
+	kvStoresResponse, err := client.ListKVStores(context.Background(), &fastly.ListKVStoresInput{})
+	if err != nil {
+		log.Printf("Error listing KV Stores: %v. Skipping KV Store imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if len(kvStoresResponse.Data) == 0 {
+		fmt.Println("No KV Stores found for this account.")
+	} else {
+		fmt.Printf("Found %d KV Store(s). Adding to import.tf...\n", len(kvStoresResponse.Data))
+
+		for _, store := range kvStoresResponse.Data {
+			if store.StoreID == "" {
+				log.Printf("Skipping KV Store with empty ID (Name: %s)\n", store.Name)
+				continue
+			}
+
+			// Sanitize the store name for the Terraform resource
+			tfStoreResourceName := sanitizeForTerraformResourceName(store.Name, "kvstore")
+			if store.Name == "" || tfStoreResourceName == "kvstore_unnamed" || tfStoreResourceName == "kvstore_sanitized_empty" {
+				// If original store name was empty or problematic, use sanitized ID for a more stable name
+				sanitizedIDForName := sanitizeForTerraformResourceName(store.StoreID, "store")
+				tfStoreResourceName = fmt.Sprintf("kvstore_%s", sanitizedIDForName)
+			}
+
+			// Create the import block for the KV Store
+			storeImportBlock := rootBody.AppendNewBlock("import", nil)
+			storeImportBody := storeImportBlock.Body()
+			storeImportBody.SetAttributeValue("id", cty.StringVal(store.StoreID))
+
+			// Set the Terraform resource type and name
+			storeImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_kvstore"},
+				hcl.TraverseAttr{Name: tfStoreResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("  Added import for KV Store: %s (ID: %s) as fastly_kvstore.%s\n", store.Name, store.StoreID, tfStoreResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importSecretStores handles importing Fastly Secret Store resources
+func importSecretStores(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly Secret Stores...")
+	
+	secretStoresResponse, err := client.ListSecretStores(context.Background(), &fastly.ListSecretStoresInput{})
+	if err != nil {
+		log.Printf("Error listing Secret Stores: %v. Skipping Secret Store imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if len(secretStoresResponse.Data) == 0 {
+		fmt.Println("No Secret Stores found for this account.")
+	} else {
+		fmt.Printf("Found %d Secret Store(s). Adding to import.tf...\n", len(secretStoresResponse.Data))
+
+		for _, store := range secretStoresResponse.Data {
+			if store.StoreID == "" {
+				log.Printf("Skipping Secret Store with empty ID (Name: %s)\n", store.Name)
+				continue
+			}
+
+			// Sanitize the store name for the Terraform resource
+			tfStoreResourceName := sanitizeForTerraformResourceName(store.Name, "secretstore")
+			if store.Name == "" || tfStoreResourceName == "secretstore_unnamed" || tfStoreResourceName == "secretstore_sanitized_empty" {
+				// If original store name was empty or problematic, use sanitized ID for a more stable name
+				sanitizedIDForName := sanitizeForTerraformResourceName(store.StoreID, "store")
+				tfStoreResourceName = fmt.Sprintf("secretstore_%s", sanitizedIDForName)
+			}
+
+			// Create the import block for the Secret Store
+			storeImportBlock := rootBody.AppendNewBlock("import", nil)
+			storeImportBody := storeImportBlock.Body()
+			storeImportBody.SetAttributeValue("id", cty.StringVal(store.StoreID))
+
+			// Set the Terraform resource type and name
+			storeImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_secretstore"},
+				hcl.TraverseAttr{Name: tfStoreResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("  Added import for Secret Store: %s (ID: %s) as fastly_secretstore.%s\n", store.Name, store.StoreID, tfStoreResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
 // importNGWAFWorkspaceLists handles importing NGWAF workspace-scoped list resources
 func importNGWAFWorkspaceLists(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
 	importCount := 0
@@ -1208,7 +1358,23 @@ func main() {
 			}
 		}
 
-		// --- 4. Process NGWAF Resources ---
+		// --- 4. Process Store Resources ---
+		configStoreImportCount, err := importConfigStores(client, rootBody)
+		if err == nil {
+			importCount += configStoreImportCount
+		}
+
+		kvStoreImportCount, err := importKVStores(client, rootBody)
+		if err == nil {
+			importCount += kvStoreImportCount
+		}
+
+		secretStoreImportCount, err := importSecretStores(client, rootBody)
+		if err == nil {
+			importCount += secretStoreImportCount
+		}
+
+		// --- 5. Process NGWAF Resources ---
 		ngwafWorkspaces, workspaceImportCount, err := importNGWAFWorkspaces(client, rootBody)
 		if err == nil {
 			importCount += workspaceImportCount
