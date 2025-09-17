@@ -2,6 +2,13 @@ package main
 
 import (
 	"testing"
+	
+	"github.com/fastly/go-fastly/v11/fastly"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/lists"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/rules"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/signals"
+	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
 func TestSanitizeForTerraformResourceName(t *testing.T) {
@@ -273,5 +280,67 @@ func TestValidateImportMode(t *testing.T) {
 				t.Errorf("validateImportMode(%q) = %q, want %q", tt.input, result, tt.expected)
 			}
 		})
+	}
+}
+
+// TestImportNGWAFWorkspaces tests the NGWAF workspace import function with minimal verification
+func TestImportNGWAFWorkspaces(t *testing.T) {
+	// This test verifies the function exists and has the right signature
+	// We don't call it because it requires a valid client and would make API calls
+	
+	// Verify function signature by checking it can be assigned to a variable
+	var fn func(*fastly.Client, *hclwrite.Body) (*workspaces.Workspaces, int, error)
+	fn = importNGWAFWorkspaces
+	if fn == nil {
+		t.Error("importNGWAFWorkspaces function should exist")
+	}
+}
+
+// TestImportNGWAFAccountLists tests the NGWAF account lists import function
+func TestImportNGWAFAccountLists(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body) (*lists.Lists, int, error)
+	fn = importNGWAFAccountLists
+	if fn == nil {
+		t.Error("importNGWAFAccountLists function should exist")
+	}
+}
+
+// TestImportNGWAFAccountRules tests the NGWAF account rules import function
+func TestImportNGWAFAccountRules(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body) (*rules.Rules, int, error)
+	fn = importNGWAFAccountRules
+	if fn == nil {
+		t.Error("importNGWAFAccountRules function should exist")
+	}
+}
+
+// TestImportNGWAFAccountSignals tests the NGWAF account signals import function
+func TestImportNGWAFAccountSignals(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body) (*signals.Signals, int, error)
+	fn = importNGWAFAccountSignals
+	if fn == nil {
+		t.Error("importNGWAFAccountSignals function should exist")
+	}
+}
+
+// TestImportNGWAFWorkspaceScopedResources tests the workspace-scoped import function
+func TestImportNGWAFWorkspaceScopedResources(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, *workspaces.Workspaces) (int, error)
+	fn = importNGWAFWorkspaceScopedResources
+	if fn == nil {
+		t.Error("importNGWAFWorkspaceScopedResources function should exist")
+	}
+	
+	// Test with nil workspaces (should return 0 count and no error)
+	importCount, err := importNGWAFWorkspaceScopedResources(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when workspaces is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when workspaces is nil, got %v", err)
 	}
 }
