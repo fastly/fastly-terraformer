@@ -44,3 +44,5 @@ CLAUDE.md
 terraformer
 import.tf
 generated.tf
+mod
+fastly-terraformer
