@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -100,11 +101,54 @@ func generateWorkspacePrefixedResourceName(workspaceID, resourceName, resourceID
 	return fmt.Sprintf("%s_%s", sanitizedWorkspaceID, baseResourceName)
 }
 
+// validateImportMode validates and normalizes the import mode
+func validateImportMode(mode string) string {
+	if mode != "all" && mode != "ngwaf" {
+		return "all" // default fallback
+	}
+	return mode
+}
+
 func main() {
+	// --- 0. Parse CLI Arguments ---
+	var importMode = flag.String("import", "all", "Specify which resources to import: all (default) or ngwaf")
+	var showHelp = flag.Bool("help", false, "Show help information")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "\nfastly-terraformer generates Terraform import blocks for Fastly resources.\n\n")
+		fmt.Fprintf(os.Stderr, "Options:\n")
+		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\nImport Modes:\n")
+		fmt.Fprintf(os.Stderr, "  all    Import all resources (Fastly services, dynamic snippets, NGWAF workspaces, lists, rules, signals, etc.) - default\n")
+		fmt.Fprintf(os.Stderr, "  ngwaf  Import only NGWAF-specific resources (workspaces, lists, rules, signals, and all NGWAF sub-resources)\n")
+		fmt.Fprintf(os.Stderr, "\nEnvironment Variables:\n")
+		fmt.Fprintf(os.Stderr, "  FASTLY_API_KEY  Your Fastly API token (required)\n")
+		fmt.Fprintf(os.Stderr, "\nExamples:\n")
+		fmt.Fprintf(os.Stderr, "  %s                    # Import all resources\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  %s -import all        # Import all resources (explicit)\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  %s -import ngwaf      # Import only NGWAF resources\n", os.Args[0])
+	}
+	flag.Parse()
+
+	if *showHelp {
+		flag.Usage()
+		return
+	}
+
+	// Validate import mode
+	originalMode := *importMode
+	*importMode = validateImportMode(*importMode)
+	if originalMode != *importMode {
+		fmt.Fprintf(os.Stderr, "Error: Invalid import mode '%s'. Valid options are 'all' or 'ngwaf'.\n", originalMode)
+		fmt.Fprintf(os.Stderr, "Using default mode 'all'.\n\n")
+	}
+
+	fmt.Printf("Import mode: %s\n", *importMode)
+
 	// --- 1. Initialize Fastly Client ---
-	apiToken := os.Getenv("FASTLY_API_TOKEN")
+	apiToken := os.Getenv("FASTLY_API_KEY")
 	if apiToken == "" {
-		log.Fatal("FASTLY_API_TOKEN environment variable not set. Please set it before running the program.")
+		log.Fatal("FASTLY_API_KEY environment variable not set. Please set it before running the program.")
 	}
 
 	client, err := fastly.NewClient(apiToken)
@@ -112,30 +156,37 @@ func main() {
 		log.Fatalf("Error creating Fastly client: %v", err)
 	}
 
-	// --- 2. List All Services ---
-	listServicesInput := &fastly.ListServicesInput{}
-
-	fmt.Println("Fetching Fastly services...")
-	services, err := client.ListServices(context.Background(), listServicesInput)
-	if err != nil {
-		log.Fatalf("Error listing Fastly services: %v", err)
-	}
-
-	if len(services) == 0 {
-		fmt.Println("No Fastly services found for this account. No import.tf will be generated.")
-		return
-	}
-
-	fmt.Printf("\nFound %d Fastly service(s). Generating import.tf...\n", len(services))
-
-	// --- 3. Generate Terraform Import File ---
+	// --- 2. Generate Terraform Import File ---
 	hclFile := hclwrite.NewEmptyFile()
 	rootBody := hclFile.Body()
 	importCount := 0
 
-	// Process Fastly services (VCL, Compute) and their dynamic snippets
+	// Declare variables for resources that will be shown in the summary
+	var services []*fastly.Service
+	var ngwafWorkspaces *workspaces.Workspaces
+	var ngwafLists *lists.Lists
+	var ngwafRules *rules.Rules
+	var ngwafSignals *signals.Signals
 
-	for _, service := range services { // service is of type *fastly.Service
+	// --- 3. Process Resources Based on Import Mode ---
+	if *importMode == "all" {
+		// --- 3a. List All Services ---
+		listServicesInput := &fastly.ListServicesInput{}
+
+		fmt.Println("Fetching Fastly services...")
+		var err error
+		services, err = client.ListServices(context.Background(), listServicesInput)
+		if err != nil {
+			log.Fatalf("Error listing Fastly services: %v", err)
+		}
+
+		if len(services) == 0 {
+			fmt.Println("No Fastly services found for this account.")
+		} else {
+			fmt.Printf("Found %d Fastly service(s). Adding to import.tf...\n", len(services))
+
+			// Process Fastly services (VCL, Compute) and their dynamic snippets
+			for _, service := range services { // service is of type *fastly.Service
 		var serviceIDValue string
 		// The fastly.Service struct (from ListServices) has a 'ServiceID *string `mapstructure:"id"`' field.
 		if service.ServiceID != nil {
@@ -321,11 +372,13 @@ func main() {
 				fmt.Printf("  Processed %d snippets. No snippets with Dynamic flag set found for service %s (version %d).\n", len(allSnippets), serviceName, activeVersionNumber)
 			}
 		}
+		}
 	}
 
-	// --- 4. Process NGWAF Workspaces ---
+	// --- 4. Process NGWAF Resources ---
+	// NGWAF resources are processed for both 'all' and 'ngwaf' import modes
 	fmt.Println("\nFetching NGWAF workspaces...")
-	ngwafWorkspaces, err := workspaces.List(context.Background(), client, &workspaces.ListInput{})
+	ngwafWorkspaces, err = workspaces.List(context.Background(), client, &workspaces.ListInput{})
 	if err != nil {
 		log.Printf("Error listing NGWAF workspaces: %v. Skipping NGWAF workspace imports.", err)
 	} else {
@@ -375,7 +428,7 @@ func main() {
 		AppliesTo: []string{"*"},
 	}
 	
-	ngwafLists, err := lists.ListLists(context.Background(), client, &lists.ListInput{Scope: accountScope})
+	ngwafLists, err = lists.ListLists(context.Background(), client, &lists.ListInput{Scope: accountScope})
 	if err != nil {
 		log.Printf("Error listing NGWAF account lists: %v. Skipping NGWAF list imports.", err)
 	} else {
@@ -419,7 +472,7 @@ func main() {
 	// --- 6. Process NGWAF Account Rules ---
 	fmt.Println("\nFetching NGWAF account rules...")
 	
-	ngwafRules, err := rules.List(context.Background(), client, &rules.ListInput{Scope: accountScope})
+	ngwafRules, err = rules.List(context.Background(), client, &rules.ListInput{Scope: accountScope})
 	if err != nil {
 		log.Printf("Error listing NGWAF account rules: %v. Skipping NGWAF rule imports.", err)
 	} else {
@@ -463,7 +516,7 @@ func main() {
 	// --- 7. Process NGWAF Account Signals ---
 	fmt.Println("\nFetching NGWAF account signals...")
 	
-	ngwafSignals, err := signals.List(context.Background(), client, &signals.ListInput{Scope: accountScope})
+	ngwafSignals, err = signals.List(context.Background(), client, &signals.ListInput{Scope: accountScope})
 	if err != nil {
 		log.Printf("Error listing NGWAF account signals: %v. Skipping NGWAF signal imports.", err)
 	} else {
@@ -923,24 +976,27 @@ func main() {
 
 	fmt.Printf("\nSuccessfully generated %s with %d import block(s).\n", outputPath, importCount)
 
-	fmt.Println("\n--- Service Details Summary (for reference) ---")
-	fmt.Println("------------------------------------")
-	for i, service := range services {
-		fmt.Printf("Service %d:\n", i+1)
-		var id, name, typeStr string
-		if service.ServiceID != nil {
-			id = *service.ServiceID
-		}
-		if service.Name != nil {
-			name = *service.Name
-		}
-		if service.Type != nil {
-			typeStr = *service.Type
-		}
-		fmt.Printf("  ID:   %s\n", id)
-		fmt.Printf("  Name: %s\n", name)
-		fmt.Printf("  Type: %s\n", typeStr)
+	// --- Summary Sections (for reference) ---
+	if *importMode == "all" && len(services) > 0 {
+		fmt.Println("\n--- Service Details Summary (for reference) ---")
 		fmt.Println("------------------------------------")
+		for i, service := range services {
+			fmt.Printf("Service %d:\n", i+1)
+			var id, name, typeStr string
+			if service.ServiceID != nil {
+				id = *service.ServiceID
+			}
+			if service.Name != nil {
+				name = *service.Name
+			}
+			if service.Type != nil {
+				typeStr = *service.Type
+			}
+			fmt.Printf("  ID:   %s\n", id)
+			fmt.Printf("  Name: %s\n", name)
+			fmt.Printf("  Type: %s\n", typeStr)
+			fmt.Println("------------------------------------")
+		}
 	}
 	
 	// Add NGWAF workspace summary
@@ -1001,4 +1057,5 @@ func main() {
 			fmt.Println("------------------------------------")
 		}
 	}
+}
 }
