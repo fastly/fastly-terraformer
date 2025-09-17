@@ -344,3 +344,60 @@ func TestImportNGWAFWorkspaceScopedResources(t *testing.T) {
 		t.Errorf("Expected no error when workspaces is nil, got %v", err)
 	}
 }
+
+// TestImportNGWAFWorkspaceLists tests the workspace-scoped lists import function
+func TestImportNGWAFWorkspaceLists(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, *workspaces.Workspaces) (int, error)
+	fn = importNGWAFWorkspaceLists
+	if fn == nil {
+		t.Error("importNGWAFWorkspaceLists function should exist")
+	}
+	
+	// Test with nil workspaces (should return 0 count and no error)
+	importCount, err := importNGWAFWorkspaceLists(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when workspaces is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when workspaces is nil, got %v", err)
+	}
+}
+
+// TestImportNGWAFWorkspaceRules tests the workspace-scoped rules import function
+func TestImportNGWAFWorkspaceRules(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, *workspaces.Workspaces) (int, error)
+	fn = importNGWAFWorkspaceRules
+	if fn == nil {
+		t.Error("importNGWAFWorkspaceRules function should exist")
+	}
+	
+	// Test with nil workspaces (should return 0 count and no error)
+	importCount, err := importNGWAFWorkspaceRules(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when workspaces is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when workspaces is nil, got %v", err)
+	}
+}
+
+// TestImportNGWAFWorkspaceSignals tests the workspace-scoped signals import function
+func TestImportNGWAFWorkspaceSignals(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, *workspaces.Workspaces) (int, error)
+	fn = importNGWAFWorkspaceSignals
+	if fn == nil {
+		t.Error("importNGWAFWorkspaceSignals function should exist")
+	}
+	
+	// Test with nil workspaces (should return 0 count and no error)
+	importCount, err := importNGWAFWorkspaceSignals(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when workspaces is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when workspaces is nil, got %v", err)
+	}
+}

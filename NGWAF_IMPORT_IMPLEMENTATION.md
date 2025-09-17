@@ -21,6 +21,15 @@ All alert integrations are workspace-scoped and require iterating through worksp
 2. `fastly_ngwaf_thresholds`
 3. `fastly_ngwaf_virtual_patches`
 
+### Workspace-scoped List/Rule/Signal Resources (NEW)
+The following resources are now implemented using workspace-scoped queries:
+
+1. `fastly_ngwaf_workspace_list` - Lists filtered by workspace
+2. `fastly_ngwaf_workspace_rule` - Rules filtered by workspace
+3. `fastly_ngwaf_workspace_signal` - Signals filtered by workspace
+
+These resources use workspace-specific scopes instead of account-level scopes, allowing per-workspace filtering of lists, rules, and signals.
+
 ### Previously Implemented Resources
 - `fastly_ngwaf_workspace` - Workspace management
 - `fastly_ngwaf_account_list` - Account-level lists
@@ -74,6 +83,21 @@ import {
   id = "prod_tf_ngwaf_site/CVE-2025-54236"
   to = fastly_ngwaf_virtual_patches.prod_tf_ngwaf_site_adobe_commerce_and_magento_open_source_unauthenticated_api_access
 }
+
+import {
+  id = "workspace-123/list-def"
+  to = fastly_ngwaf_workspace_list.workspace_123_blocked_ips
+}
+
+import {
+  id = "workspace-123/rule-ghi"
+  to = fastly_ngwaf_workspace_rule.workspace_123_sql_injection_protection
+}
+
+import {
+  id = "workspace-123/signal-jkl"
+  to = fastly_ngwaf_workspace_signal.workspace_123_suspicious_activity
+}
 ```
 
 ## Usage
@@ -103,6 +127,6 @@ go test -v
 
 ## Notes
 
-- `fastly_ngwaf_workspace_list`, `fastly_ngwaf_workspace_rule`, and `fastly_ngwaf_workspace_signal` from the original requirements are not available as separate workspace-scoped APIs. Lists, rules, and signals are account-level resources already implemented.
 - All workspace-scoped resources require valid workspace access
 - The implementation follows existing patterns in the codebase for consistency
+- Workspace-scoped lists, rules, and signals are now available using `common.ScopeTypeWorkspace` filtering

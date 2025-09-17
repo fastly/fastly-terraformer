@@ -322,6 +322,216 @@ func importNGWAFAccountSignals(client *fastly.Client, rootBody *hclwrite.Body) (
 	return ngwafSignals, importCount, nil
 }
 
+// importNGWAFWorkspaceLists handles importing NGWAF workspace-scoped list resources
+func importNGWAFWorkspaceLists(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
+	importCount := 0
+	
+	if ngwafWorkspaces == nil || len(ngwafWorkspaces.Data) == 0 {
+		fmt.Println("No workspaces available for workspace-scoped list imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching NGWAF workspace-scoped lists...")
+
+	for _, workspace := range ngwafWorkspaces.Data {
+		if workspace.WorkspaceID == "" {
+			continue
+		}
+
+		fmt.Printf("  Fetching lists for workspace: %s (ID: %s)\n", workspace.Name, workspace.WorkspaceID)
+		
+		workspaceScope := &common.Scope{
+			Type:      common.ScopeTypeWorkspace,
+			AppliesTo: []string{workspace.WorkspaceID},
+		}
+
+		ngwafLists, err := lists.ListLists(context.Background(), client, &lists.ListInput{Scope: workspaceScope})
+		if err != nil {
+			log.Printf("Error listing NGWAF lists for workspace %s: %v. Skipping.", workspace.WorkspaceID, err)
+			continue
+		}
+
+		if len(ngwafLists.Data) == 0 {
+			fmt.Printf("    No lists found for workspace %s\n", workspace.WorkspaceID)
+			continue
+		}
+
+		fmt.Printf("    Found %d list(s) for workspace %s\n", len(ngwafLists.Data), workspace.WorkspaceID)
+
+		for _, list := range ngwafLists.Data {
+			if list.ListID == "" {
+				log.Printf("Skipping NGWAF workspace list with empty ID (Name: %s) in workspace %s\n", list.Name, workspace.WorkspaceID)
+				continue
+			}
+
+			importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, list.ListID)
+
+			// Generate workspace-prefixed resource name to prevent conflicts
+			tfListResourceName := generateWorkspacePrefixedResourceName(
+				workspace.WorkspaceID,
+				list.Name,
+				list.ListID,
+				"ngwaf_workspace_list",
+			)
+
+			listImportBlock := rootBody.AppendNewBlock("import", nil)
+			listImportBody := listImportBlock.Body()
+			listImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+			listImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_ngwaf_workspace_list"},
+				hcl.TraverseAttr{Name: tfListResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("    Added import for NGWAF workspace list: %s (ID: %s) as fastly_ngwaf_workspace_list.%s\n", list.Name, importID, tfListResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importNGWAFWorkspaceRules handles importing NGWAF workspace-scoped rule resources
+func importNGWAFWorkspaceRules(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
+	importCount := 0
+	
+	if ngwafWorkspaces == nil || len(ngwafWorkspaces.Data) == 0 {
+		fmt.Println("No workspaces available for workspace-scoped rule imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching NGWAF workspace-scoped rules...")
+
+	for _, workspace := range ngwafWorkspaces.Data {
+		if workspace.WorkspaceID == "" {
+			continue
+		}
+
+		fmt.Printf("  Fetching rules for workspace: %s (ID: %s)\n", workspace.Name, workspace.WorkspaceID)
+		
+		workspaceScope := &common.Scope{
+			Type:      common.ScopeTypeWorkspace,
+			AppliesTo: []string{workspace.WorkspaceID},
+		}
+
+		ngwafRules, err := rules.List(context.Background(), client, &rules.ListInput{Scope: workspaceScope})
+		if err != nil {
+			log.Printf("Error listing NGWAF rules for workspace %s: %v. Skipping.", workspace.WorkspaceID, err)
+			continue
+		}
+
+		if len(ngwafRules.Data) == 0 {
+			fmt.Printf("    No rules found for workspace %s\n", workspace.WorkspaceID)
+			continue
+		}
+
+		fmt.Printf("    Found %d rule(s) for workspace %s\n", len(ngwafRules.Data), workspace.WorkspaceID)
+
+		for _, rule := range ngwafRules.Data {
+			if rule.RuleID == "" {
+				log.Printf("Skipping NGWAF workspace rule with empty ID (Description: %s) in workspace %s\n", rule.Description, workspace.WorkspaceID)
+				continue
+			}
+
+			importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, rule.RuleID)
+
+			// Generate workspace-prefixed resource name to prevent conflicts
+			tfRuleResourceName := generateWorkspacePrefixedResourceName(
+				workspace.WorkspaceID,
+				rule.Description,
+				rule.RuleID,
+				"ngwaf_workspace_rule",
+			)
+
+			ruleImportBlock := rootBody.AppendNewBlock("import", nil)
+			ruleImportBody := ruleImportBlock.Body()
+			ruleImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+			ruleImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_ngwaf_workspace_rule"},
+				hcl.TraverseAttr{Name: tfRuleResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("    Added import for NGWAF workspace rule: %s (ID: %s) as fastly_ngwaf_workspace_rule.%s\n", rule.Description, importID, tfRuleResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importNGWAFWorkspaceSignals handles importing NGWAF workspace-scoped signal resources
+func importNGWAFWorkspaceSignals(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
+	importCount := 0
+	
+	if ngwafWorkspaces == nil || len(ngwafWorkspaces.Data) == 0 {
+		fmt.Println("No workspaces available for workspace-scoped signal imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching NGWAF workspace-scoped signals...")
+
+	for _, workspace := range ngwafWorkspaces.Data {
+		if workspace.WorkspaceID == "" {
+			continue
+		}
+
+		fmt.Printf("  Fetching signals for workspace: %s (ID: %s)\n", workspace.Name, workspace.WorkspaceID)
+		
+		workspaceScope := &common.Scope{
+			Type:      common.ScopeTypeWorkspace,
+			AppliesTo: []string{workspace.WorkspaceID},
+		}
+
+		ngwafSignals, err := signals.List(context.Background(), client, &signals.ListInput{Scope: workspaceScope})
+		if err != nil {
+			log.Printf("Error listing NGWAF signals for workspace %s: %v. Skipping.", workspace.WorkspaceID, err)
+			continue
+		}
+
+		if len(ngwafSignals.Data) == 0 {
+			fmt.Printf("    No signals found for workspace %s\n", workspace.WorkspaceID)
+			continue
+		}
+
+		fmt.Printf("    Found %d signal(s) for workspace %s\n", len(ngwafSignals.Data), workspace.WorkspaceID)
+
+		for _, signal := range ngwafSignals.Data {
+			if signal.SignalID == "" {
+				log.Printf("Skipping NGWAF workspace signal with empty ID (Name: %s) in workspace %s\n", signal.Name, workspace.WorkspaceID)
+				continue
+			}
+
+			importID := fmt.Sprintf("%s/%s", workspace.WorkspaceID, signal.SignalID)
+
+			// Generate workspace-prefixed resource name to prevent conflicts
+			tfSignalResourceName := generateWorkspacePrefixedResourceName(
+				workspace.WorkspaceID,
+				signal.Name,
+				signal.SignalID,
+				"ngwaf_workspace_signal",
+			)
+
+			signalImportBlock := rootBody.AppendNewBlock("import", nil)
+			signalImportBody := signalImportBlock.Body()
+			signalImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+			signalImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_ngwaf_workspace_signal"},
+				hcl.TraverseAttr{Name: tfSignalResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("    Added import for NGWAF workspace signal: %s (ID: %s) as fastly_ngwaf_workspace_signal.%s\n", signal.Name, importID, tfSignalResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
 // importNGWAFWorkspaceScopedResources handles importing all workspace-scoped NGWAF resources (alerts, redactions, thresholds, virtual patches)
 func importNGWAFWorkspaceScopedResources(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
 	importCount := 0
@@ -1023,6 +1233,22 @@ func main() {
 			importCount += signalsImportCount
 		}
 
+		// Import workspace-scoped lists, rules, and signals
+		workspaceListsImportCount, err := importNGWAFWorkspaceLists(client, rootBody, ngwafWorkspaces)
+		if err == nil {
+			importCount += workspaceListsImportCount
+		}
+
+		workspaceRulesImportCount, err := importNGWAFWorkspaceRules(client, rootBody, ngwafWorkspaces)
+		if err == nil {
+			importCount += workspaceRulesImportCount
+		}
+
+		workspaceSignalsImportCount, err := importNGWAFWorkspaceSignals(client, rootBody, ngwafWorkspaces)
+		if err == nil {
+			importCount += workspaceSignalsImportCount
+		}
+
 		workspaceScopedImportCount, err := importNGWAFWorkspaceScopedResources(client, rootBody, ngwafWorkspaces)
 		if err == nil {
 			importCount += workspaceScopedImportCount
@@ -1137,6 +1363,22 @@ func main() {
 		ngwafSignals, signalsImportCount, err := importNGWAFAccountSignals(client, rootBody)
 		if err == nil {
 			importCount += signalsImportCount
+		}
+
+		// Import workspace-scoped lists, rules, and signals
+		workspaceListsImportCount, err := importNGWAFWorkspaceLists(client, rootBody, ngwafWorkspaces)
+		if err == nil {
+			importCount += workspaceListsImportCount
+		}
+
+		workspaceRulesImportCount, err := importNGWAFWorkspaceRules(client, rootBody, ngwafWorkspaces)
+		if err == nil {
+			importCount += workspaceRulesImportCount
+		}
+
+		workspaceSignalsImportCount, err := importNGWAFWorkspaceSignals(client, rootBody, ngwafWorkspaces)
+		if err == nil {
+			importCount += workspaceSignalsImportCount
 		}
 
 		workspaceScopedImportCount, err := importNGWAFWorkspaceScopedResources(client, rootBody, ngwafWorkspaces)
