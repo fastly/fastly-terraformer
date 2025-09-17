@@ -482,3 +482,146 @@ func TestImportSecretStores(t *testing.T) {
 		t.Error("importSecretStores function should exist")
 	}
 }
+
+// TestImportServiceDomains tests the service domain import function
+func TestImportServiceDomains(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
+	fn = importServiceDomains
+	if fn == nil {
+		t.Error("importServiceDomains function should exist")
+	}
+
+	// Test with nil/empty services
+	importCount, err := importServiceDomains(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+
+	// Test with empty services slice
+	importCount, err = importServiceDomains(nil, nil, []*fastly.Service{})
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is empty")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is empty, got %v", err)
+	}
+}
+
+// TestImportServiceACLs tests the service ACL import function
+func TestImportServiceACLs(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
+	fn = importServiceACLs
+	if fn == nil {
+		t.Error("importServiceACLs function should exist")
+	}
+
+	// Test with nil/empty services
+	importCount, err := importServiceACLs(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+}
+
+// TestImportServiceDictionaries tests the service dictionary import function
+func TestImportServiceDictionaries(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
+	fn = importServiceDictionaries
+	if fn == nil {
+		t.Error("importServiceDictionaries function should exist")
+	}
+
+	// Test with nil/empty services
+	importCount, err := importServiceDictionaries(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+}
+
+// TestImportServiceBackends tests the service backend import function
+func TestImportServiceBackends(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
+	fn = importServiceBackends
+	if fn == nil {
+		t.Error("importServiceBackends function should exist")
+	}
+
+	// Test with nil/empty services
+	importCount, err := importServiceBackends(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+}
+
+// TestImportTLSSubscriptions tests the TLS subscription import function
+func TestImportTLSSubscriptions(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
+	fn = importTLSSubscriptions
+	if fn == nil {
+		t.Error("importTLSSubscriptions function should exist")
+	}
+}
+
+// TestImportTLSActivations tests the TLS activation import function
+func TestImportTLSActivations(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
+	fn = importTLSActivations
+	if fn == nil {
+		t.Error("importTLSActivations function should exist")
+	}
+}
+
+// TestImportServiceHealthChecks tests the service health check import function
+func TestImportServiceHealthChecks(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
+	fn = importServiceHealthChecks
+	if fn == nil {
+		t.Error("importServiceHealthChecks function should exist")
+	}
+
+	// Test with nil/empty services
+	importCount, err := importServiceHealthChecks(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+}
+
+// TestImportServiceDirectors tests the service director import function
+func TestImportServiceDirectors(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
+	fn = importServiceDirectors
+	if fn == nil {
+		t.Error("importServiceDirectors function should exist")
+	}
+
+	// Test with nil/empty services
+	importCount, err := importServiceDirectors(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+}

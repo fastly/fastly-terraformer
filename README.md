@@ -16,11 +16,21 @@
 - ✅ **`fastly_service_vcl`** - VCL services
 - ✅ **`fastly_service_compute`** - Compute (WASM) services  
 - ✅ **`fastly_service_dynamic_snippet_content`** - Dynamic snippets for VCL services
+- ✅ **`fastly_service_domain`** - Service domains
+- ✅ **`fastly_service_acl`** - Access Control Lists (VCL services only)
+- ✅ **`fastly_service_dictionary`** - Edge dictionaries (VCL services only)
+- ✅ **`fastly_service_backend`** - Backend configurations
+- ✅ **`fastly_service_health_check`** - Health check configurations
+- ✅ **`fastly_service_director`** - Load balancing directors (VCL services only)
 
 ### Fastly Store Resources
 - ✅ **`fastly_configstore`** - Config store resources
 - ✅ **`fastly_kvstore`** - Key-value store resources
 - ✅ **`fastly_secretstore`** - Secret store resources
+
+### TLS and Security  
+- ✅ **`fastly_tls_subscription`** - TLS subscriptions
+- ✅ **`fastly_tls_activation`** - TLS certificate activations
 
 ### NGWAF Account-Level Resources
 - ✅ **`fastly_ngwaf_workspace`** - NGWAF workspace management
@@ -53,11 +63,6 @@
 The following Fastly provider resources are **not currently imported** by this tool:
 
 ### Core Fastly Resources
-- ❌ **`fastly_service_acl`** - Access Control Lists  
-- ❌ **`fastly_service_dictionary`** - Edge dictionaries
-- ❌ **`fastly_service_backend`** - Backend configurations
-- ❌ **`fastly_service_director`** - Load balancing directors
-- ❌ **`fastly_service_health_check`** - Health check configurations
 - ❌ **`fastly_service_logging_*`** - Various logging endpoints (S3, Syslog, etc.)
 - ❌ **`fastly_service_request_setting`** - Request settings
 - ❌ **`fastly_service_response_object`** - Response objects
@@ -66,11 +71,9 @@ The following Fastly provider resources are **not currently imported** by this t
 - ❌ **`fastly_service_waf_configuration`** - Legacy WAF configurations
 
 ### TLS and Security
-- ❌ **`fastly_tls_activation`** - TLS certificate activations
 - ❌ **`fastly_tls_certificate`** - TLS certificates
 - ❌ **`fastly_tls_configuration`** - TLS configurations  
 - ❌ **`fastly_tls_private_key`** - TLS private keys
-- ❌ **`fastly_tls_subscription`** - TLS subscriptions
 
 ### Additional Resources
 - ❌ **`fastly_user`** - User management
