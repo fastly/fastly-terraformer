@@ -468,6 +468,634 @@ func importSecretStores(client *fastly.Client, rootBody *hclwrite.Body) (int, er
 	return importCount, nil
 }
 
+// importServiceDomains handles importing Fastly service domain resources for all services
+func importServiceDomains(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+	
+	if len(services) == 0 {
+		fmt.Println("No services available for domain imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service domains...")
+
+	for _, service := range services {
+		if service.ServiceID == nil || *service.ServiceID == "" {
+			continue
+		}
+
+		serviceID := *service.ServiceID
+		serviceName := ""
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		fmt.Printf("  Fetching domains for service: %s (ID: %s)\n", serviceName, serviceID)
+
+		// Get service details to find active version
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceID})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping domains.", serviceID, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion && serviceDetails.Versions != nil && len(serviceDetails.Versions) > 0 {
+			for _, v := range serviceDetails.Versions {
+				if v.Number != nil && v.Active != nil && *v.Active {
+					activeVersionNumber = *v.Number
+					foundActiveVersion = true
+					break
+				}
+			}
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping domains.", serviceID)
+			continue
+		}
+
+		domains, err := client.ListDomains(context.Background(), &fastly.ListDomainsInput{
+			ServiceID:      serviceID,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("  Error listing domains for service ID %s, version %d: %v", serviceID, activeVersionNumber, err)
+			continue
+		}
+
+		if len(domains) == 0 {
+			fmt.Printf("    No domains found for service %s\n", serviceID)
+			continue
+		}
+
+		fmt.Printf("    Found %d domain(s) for service %s\n", len(domains), serviceID)
+
+		for _, domain := range domains {
+			if domain.Name == nil || *domain.Name == "" {
+				log.Printf("Skipping domain with empty name for service ID %s\n", serviceID)
+				continue
+			}
+
+			// Import ID format for service domain is "service_id/domain_name"
+			importID := fmt.Sprintf("%s/%s", serviceID, *domain.Name)
+
+			// Generate resource name using service and domain information
+			sanitizedServiceID := sanitizeForTerraformResourceName(serviceID, "svc")
+			sanitizedDomainName := sanitizeForTerraformResourceName(*domain.Name, "domain")
+			tfDomainResourceName := fmt.Sprintf("service_%s_domain_%s", sanitizedServiceID, sanitizedDomainName)
+
+			domainImportBlock := rootBody.AppendNewBlock("import", nil)
+			domainImportBody := domainImportBlock.Body()
+			domainImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+			domainImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_service_domain"},
+				hcl.TraverseAttr{Name: tfDomainResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("    Added import for service domain: %s (Import ID: %s) as fastly_service_domain.%s\n", *domain.Name, importID, tfDomainResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServiceACLs handles importing Fastly service ACL resources for all services
+func importServiceACLs(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+	
+	if len(services) == 0 {
+		fmt.Println("No services available for ACL imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service ACLs...")
+
+	for _, service := range services {
+		if service.ServiceID == nil || *service.ServiceID == "" {
+			continue
+		}
+
+		serviceID := *service.ServiceID
+		serviceName := ""
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		// Only process VCL services as ACLs are VCL-specific
+		serviceType := ""
+		if service.Type != nil {
+			serviceType = *service.Type
+		}
+		if serviceType != "vcl" {
+			continue
+		}
+
+		fmt.Printf("  Fetching ACLs for VCL service: %s (ID: %s)\n", serviceName, serviceID)
+
+		// Get service details to find active version
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceID})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping ACLs.", serviceID, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion && serviceDetails.Versions != nil && len(serviceDetails.Versions) > 0 {
+			for _, v := range serviceDetails.Versions {
+				if v.Number != nil && v.Active != nil && *v.Active {
+					activeVersionNumber = *v.Number
+					foundActiveVersion = true
+					break
+				}
+			}
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping ACLs.", serviceID)
+			continue
+		}
+
+		acls, err := client.ListACLs(context.Background(), &fastly.ListACLsInput{
+			ServiceID:      serviceID,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("  Error listing ACLs for service ID %s, version %d: %v", serviceID, activeVersionNumber, err)
+			continue
+		}
+
+		if len(acls) == 0 {
+			fmt.Printf("    No ACLs found for service %s\n", serviceID)
+			continue
+		}
+
+		fmt.Printf("    Found %d ACL(s) for service %s\n", len(acls), serviceID)
+
+		for _, acl := range acls {
+			if acl.ACLID == nil || *acl.ACLID == "" {
+				log.Printf("Skipping ACL with empty ID for service ID %s\n", serviceID)
+				continue
+			}
+
+			// Import ID format for service ACL is "service_id/acl_id"
+			importID := fmt.Sprintf("%s/%s", serviceID, *acl.ACLID)
+
+			// Generate resource name using service and ACL information
+			sanitizedServiceID := sanitizeForTerraformResourceName(serviceID, "svc")
+			aclName := ""
+			if acl.Name != nil {
+				aclName = *acl.Name
+			}
+			sanitizedACLName := sanitizeForTerraformResourceName(aclName, "acl")
+			sanitizedACLID := sanitizeForTerraformResourceName(*acl.ACLID, "id")
+			tfACLResourceName := fmt.Sprintf("service_%s_acl_%s_%s", sanitizedServiceID, sanitizedACLName, sanitizedACLID)
+
+			aclImportBlock := rootBody.AppendNewBlock("import", nil)
+			aclImportBody := aclImportBlock.Body()
+			aclImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+			aclImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_service_acl"},
+				hcl.TraverseAttr{Name: tfACLResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("    Added import for service ACL: %s (Import ID: %s) as fastly_service_acl.%s\n", aclName, importID, tfACLResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServiceDictionaries handles importing Fastly service dictionary resources for all services
+func importServiceDictionaries(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+	
+	if len(services) == 0 {
+		fmt.Println("No services available for dictionary imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service dictionaries...")
+
+	for _, service := range services {
+		if service.ServiceID == nil || *service.ServiceID == "" {
+			continue
+		}
+
+		serviceID := *service.ServiceID
+		serviceName := ""
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		// Only process VCL services as dictionaries are VCL-specific
+		serviceType := ""
+		if service.Type != nil {
+			serviceType = *service.Type
+		}
+		if serviceType != "vcl" {
+			continue
+		}
+
+		fmt.Printf("  Fetching dictionaries for VCL service: %s (ID: %s)\n", serviceName, serviceID)
+
+		// Get service details to find active version
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceID})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping dictionaries.", serviceID, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion && serviceDetails.Versions != nil && len(serviceDetails.Versions) > 0 {
+			for _, v := range serviceDetails.Versions {
+				if v.Number != nil && v.Active != nil && *v.Active {
+					activeVersionNumber = *v.Number
+					foundActiveVersion = true
+					break
+				}
+			}
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping dictionaries.", serviceID)
+			continue
+		}
+
+		dictionaries, err := client.ListDictionaries(context.Background(), &fastly.ListDictionariesInput{
+			ServiceID:      serviceID,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("  Error listing dictionaries for service ID %s, version %d: %v", serviceID, activeVersionNumber, err)
+			continue
+		}
+
+		if len(dictionaries) == 0 {
+			fmt.Printf("    No dictionaries found for service %s\n", serviceID)
+			continue
+		}
+
+		fmt.Printf("    Found %d dictionary(ies) for service %s\n", len(dictionaries), serviceID)
+
+		for _, dictionary := range dictionaries {
+			if dictionary.DictionaryID == nil || *dictionary.DictionaryID == "" {
+				log.Printf("Skipping dictionary with empty ID for service ID %s\n", serviceID)
+				continue
+			}
+
+			// Import ID format for service dictionary is "service_id/dictionary_id"
+			importID := fmt.Sprintf("%s/%s", serviceID, *dictionary.DictionaryID)
+
+			// Generate resource name using service and dictionary information
+			sanitizedServiceID := sanitizeForTerraformResourceName(serviceID, "svc")
+			dictName := ""
+			if dictionary.Name != nil {
+				dictName = *dictionary.Name
+			}
+			sanitizedDictName := sanitizeForTerraformResourceName(dictName, "dict")
+			sanitizedDictID := sanitizeForTerraformResourceName(*dictionary.DictionaryID, "id")
+			tfDictResourceName := fmt.Sprintf("service_%s_dictionary_%s_%s", sanitizedServiceID, sanitizedDictName, sanitizedDictID)
+
+			dictImportBlock := rootBody.AppendNewBlock("import", nil)
+			dictImportBody := dictImportBlock.Body()
+			dictImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+			dictImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_service_dictionary"},
+				hcl.TraverseAttr{Name: tfDictResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("    Added import for service dictionary: %s (Import ID: %s) as fastly_service_dictionary.%s\n", dictName, importID, tfDictResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServiceBackends handles importing Fastly service backend resources for all services
+func importServiceBackends(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+	
+	if len(services) == 0 {
+		fmt.Println("No services available for backend imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service backends...")
+
+	for _, service := range services {
+		if service.ServiceID == nil || *service.ServiceID == "" {
+			continue
+		}
+
+		serviceID := *service.ServiceID
+		serviceName := ""
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		fmt.Printf("  Fetching backends for service: %s (ID: %s)\n", serviceName, serviceID)
+
+		// Get service details to find active version
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceID})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping backends.", serviceID, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion && serviceDetails.Versions != nil && len(serviceDetails.Versions) > 0 {
+			for _, v := range serviceDetails.Versions {
+				if v.Number != nil && v.Active != nil && *v.Active {
+					activeVersionNumber = *v.Number
+					foundActiveVersion = true
+					break
+				}
+			}
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping backends.", serviceID)
+			continue
+		}
+
+		backends, err := client.ListBackends(context.Background(), &fastly.ListBackendsInput{
+			ServiceID:      serviceID,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("  Error listing backends for service ID %s, version %d: %v", serviceID, activeVersionNumber, err)
+			continue
+		}
+
+		if len(backends) == 0 {
+			fmt.Printf("    No backends found for service %s\n", serviceID)
+			continue
+		}
+
+		fmt.Printf("    Found %d backend(s) for service %s\n", len(backends), serviceID)
+
+		for _, backend := range backends {
+			if backend.Name == nil || *backend.Name == "" {
+				log.Printf("Skipping backend with empty name for service ID %s\n", serviceID)
+				continue
+			}
+
+			// Import ID format for service backend is "service_id/backend_name"
+			importID := fmt.Sprintf("%s/%s", serviceID, *backend.Name)
+
+			// Generate resource name using service and backend information
+			sanitizedServiceID := sanitizeForTerraformResourceName(serviceID, "svc")
+			sanitizedBackendName := sanitizeForTerraformResourceName(*backend.Name, "backend")
+			tfBackendResourceName := fmt.Sprintf("service_%s_backend_%s", sanitizedServiceID, sanitizedBackendName)
+
+			backendImportBlock := rootBody.AppendNewBlock("import", nil)
+			backendImportBody := backendImportBlock.Body()
+			backendImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+			backendImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_service_backend"},
+				hcl.TraverseAttr{Name: tfBackendResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("    Added import for service backend: %s (Import ID: %s) as fastly_service_backend.%s\n", *backend.Name, importID, tfBackendResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importTLSSubscriptions handles importing Fastly TLS subscription resources
+func importTLSSubscriptions(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly TLS subscriptions...")
+	
+	tlsSubscriptions, err := client.ListTLSSubscriptions(context.Background(), &fastly.ListTLSSubscriptionsInput{})
+	if err != nil {
+		log.Printf("Error listing TLS subscriptions: %v. Skipping TLS subscription imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if len(tlsSubscriptions) == 0 {
+		fmt.Println("No TLS subscriptions found for this account.")
+	} else {
+		fmt.Printf("Found %d TLS subscription(s). Adding to import.tf...\n", len(tlsSubscriptions))
+
+		for _, subscription := range tlsSubscriptions {
+			if subscription.ID == "" {
+				log.Printf("Skipping TLS subscription with empty ID\n")
+				continue
+			}
+
+			// Sanitize the subscription ID for the Terraform resource name
+			tfSubscriptionResourceName := sanitizeForTerraformResourceName(subscription.ID, "tls_subscription")
+
+			// Create the import block for the TLS subscription
+			subscriptionImportBlock := rootBody.AppendNewBlock("import", nil)
+			subscriptionImportBody := subscriptionImportBlock.Body()
+			subscriptionImportBody.SetAttributeValue("id", cty.StringVal(subscription.ID))
+
+			// Set the Terraform resource type and name
+			subscriptionImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_tls_subscription"},
+				hcl.TraverseAttr{Name: tfSubscriptionResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("  Added import for TLS subscription: %s as fastly_tls_subscription.%s\n", subscription.ID, tfSubscriptionResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importTLSActivations handles importing Fastly TLS activation resources
+func importTLSActivations(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly TLS activations...")
+	
+	tlsActivations, err := client.ListTLSActivations(context.Background(), &fastly.ListTLSActivationsInput{})
+	if err != nil {
+		log.Printf("Error listing TLS activations: %v. Skipping TLS activation imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if len(tlsActivations) == 0 {
+		fmt.Println("No TLS activations found for this account.")
+	} else {
+		fmt.Printf("Found %d TLS activation(s). Adding to import.tf...\n", len(tlsActivations))
+
+		for _, activation := range tlsActivations {
+			if activation.ID == "" {
+				log.Printf("Skipping TLS activation with empty ID\n")
+				continue
+			}
+
+			// Sanitize the activation ID for the Terraform resource name
+			tfActivationResourceName := sanitizeForTerraformResourceName(activation.ID, "tls_activation")
+
+			// Create the import block for the TLS activation
+			activationImportBlock := rootBody.AppendNewBlock("import", nil)
+			activationImportBody := activationImportBlock.Body()
+			activationImportBody.SetAttributeValue("id", cty.StringVal(activation.ID))
+
+			// Set the Terraform resource type and name
+			activationImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_tls_activation"},
+				hcl.TraverseAttr{Name: tfActivationResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("  Added import for TLS activation: %s as fastly_tls_activation.%s\n", activation.ID, tfActivationResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServiceHealthChecks handles importing Fastly service health check resources for all services
+func importServiceHealthChecks(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+	
+	if len(services) == 0 {
+		fmt.Println("No services available for health check imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service health checks...")
+
+	for _, service := range services {
+		if service.ServiceID == nil || *service.ServiceID == "" {
+			continue
+		}
+
+		serviceID := *service.ServiceID
+		serviceName := ""
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		fmt.Printf("  Fetching health checks for service: %s (ID: %s)\n", serviceName, serviceID)
+
+		// Get service details to find active version
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceID})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping health checks.", serviceID, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion && serviceDetails.Versions != nil && len(serviceDetails.Versions) > 0 {
+			for _, v := range serviceDetails.Versions {
+				if v.Number != nil && v.Active != nil && *v.Active {
+					activeVersionNumber = *v.Number
+					foundActiveVersion = true
+					break
+				}
+			}
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping health checks.", serviceID)
+			continue
+		}
+
+		healthChecks, err := client.ListHealthChecks(context.Background(), &fastly.ListHealthChecksInput{
+			ServiceID:      serviceID,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("  Error listing health checks for service ID %s, version %d: %v", serviceID, activeVersionNumber, err)
+			continue
+		}
+
+		if len(healthChecks) == 0 {
+			fmt.Printf("    No health checks found for service %s\n", serviceID)
+			continue
+		}
+
+		fmt.Printf("    Found %d health check(s) for service %s\n", len(healthChecks), serviceID)
+
+		for _, healthCheck := range healthChecks {
+			if healthCheck.Name == nil || *healthCheck.Name == "" {
+				log.Printf("Skipping health check with empty name for service ID %s\n", serviceID)
+				continue
+			}
+
+			// Import ID format for service health check is "service_id/health_check_name"
+			importID := fmt.Sprintf("%s/%s", serviceID, *healthCheck.Name)
+
+			// Generate resource name using service and health check information
+			sanitizedServiceID := sanitizeForTerraformResourceName(serviceID, "svc")
+			sanitizedHealthCheckName := sanitizeForTerraformResourceName(*healthCheck.Name, "healthcheck")
+			tfHealthCheckResourceName := fmt.Sprintf("service_%s_health_check_%s", sanitizedServiceID, sanitizedHealthCheckName)
+
+			healthCheckImportBlock := rootBody.AppendNewBlock("import", nil)
+			healthCheckImportBody := healthCheckImportBlock.Body()
+			healthCheckImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+			healthCheckImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_service_health_check"},
+				hcl.TraverseAttr{Name: tfHealthCheckResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("    Added import for service health check: %s (Import ID: %s) as fastly_service_health_check.%s\n", *healthCheck.Name, importID, tfHealthCheckResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
 // importNGWAFWorkspaceLists handles importing NGWAF workspace-scoped list resources
 func importNGWAFWorkspaceLists(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
 	importCount := 0
@@ -1358,6 +1986,37 @@ func main() {
 			}
 		}
 
+		// --- 3b. Process Service-Scoped Resources ---
+		// Import service domains for all services
+		serviceDomainImportCount, err := importServiceDomains(client, rootBody, services)
+		if err == nil {
+			importCount += serviceDomainImportCount
+		}
+
+		// Import service ACLs for VCL services
+		serviceACLImportCount, err := importServiceACLs(client, rootBody, services)
+		if err == nil {
+			importCount += serviceACLImportCount
+		}
+
+		// Import service dictionaries for VCL services
+		serviceDictImportCount, err := importServiceDictionaries(client, rootBody, services)
+		if err == nil {
+			importCount += serviceDictImportCount
+		}
+
+		// Import service backends for all services
+		serviceBackendImportCount, err := importServiceBackends(client, rootBody, services)
+		if err == nil {
+			importCount += serviceBackendImportCount
+		}
+
+		// Import service health checks for all services
+		serviceHealthCheckImportCount, err := importServiceHealthChecks(client, rootBody, services)
+		if err == nil {
+			importCount += serviceHealthCheckImportCount
+		}
+
 		// --- 4. Process Store Resources ---
 		configStoreImportCount, err := importConfigStores(client, rootBody)
 		if err == nil {
@@ -1374,7 +2033,18 @@ func main() {
 			importCount += secretStoreImportCount
 		}
 
-		// --- 5. Process NGWAF Resources ---
+		// --- 5. Process TLS Resources ---
+		tlsSubscriptionImportCount, err := importTLSSubscriptions(client, rootBody)
+		if err == nil {
+			importCount += tlsSubscriptionImportCount
+		}
+
+		tlsActivationImportCount, err := importTLSActivations(client, rootBody)
+		if err == nil {
+			importCount += tlsActivationImportCount
+		}
+
+		// --- 6. Process NGWAF Resources ---
 		ngwafWorkspaces, workspaceImportCount, err := importNGWAFWorkspaces(client, rootBody)
 		if err == nil {
 			importCount += workspaceImportCount
