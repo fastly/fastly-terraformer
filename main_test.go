@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	
@@ -623,5 +624,69 @@ func TestImportServiceDirectors(t *testing.T) {
 	}
 	if err != nil {
 		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+}
+
+// TestServiceDomainResourceNameUniqueness tests that domains with similar names get unique resource names
+func TestServiceDomainResourceNameUniqueness(t *testing.T) {
+	serviceID := "KclUymQNIHIoswD9mRpXR6"
+	
+	// Test the scenario from the bug report
+	domain1 := "*.livewaflove.com"
+	domain2 := "livewaflove.com"
+	
+	// Test the current implementation to demonstrate the issue
+	sanitizedServiceID := sanitizeForTerraformResourceName(serviceID, "svc")
+	sanitizedDomain1 := sanitizeForTerraformResourceName(domain1, "domain")
+	sanitizedDomain2 := sanitizeForTerraformResourceName(domain2, "domain")
+	
+	// Current (broken) approach - both domains sanitize to the same value
+	currentResourceName1 := fmt.Sprintf("service_%s_domain_%s", sanitizedServiceID, sanitizedDomain1)
+	currentResourceName2 := fmt.Sprintf("service_%s_domain_%s", sanitizedServiceID, sanitizedDomain2)
+	
+	// Verify the problem exists
+	if currentResourceName1 != currentResourceName2 {
+		t.Errorf("Expected resource names to be identical (demonstrating the bug), but they are different: %s vs %s", currentResourceName1, currentResourceName2)
+	}
+	
+	// Now test the fixed approach that handles wildcard domains
+	// Create domain identifiers that preserve wildcard distinction
+	domainIdentifier1 := domain1
+	isWildcard1 := strings.HasPrefix(domain1, "*.")
+	if isWildcard1 {
+		domainWithoutWildcard1 := strings.TrimPrefix(domain1, "*.")
+		domainIdentifier1 = "wildcard_" + domainWithoutWildcard1
+	}
+	
+	domainIdentifier2 := domain2
+	isWildcard2 := strings.HasPrefix(domain2, "*.")
+	if isWildcard2 {
+		domainWithoutWildcard2 := strings.TrimPrefix(domain2, "*.")
+		domainIdentifier2 = "wildcard_" + domainWithoutWildcard2
+	}
+	
+	// Sanitize the domain identifiers
+	sanitizedDomainIdentifier1 := sanitizeForTerraformResourceName(domainIdentifier1, "domain")
+	sanitizedDomainIdentifier2 := sanitizeForTerraformResourceName(domainIdentifier2, "domain")
+	
+	// Create final resource names with the fix
+	fixedResourceName1 := fmt.Sprintf("service_%s_domain_%s", sanitizedServiceID, sanitizedDomainIdentifier1)
+	fixedResourceName2 := fmt.Sprintf("service_%s_domain_%s", sanitizedServiceID, sanitizedDomainIdentifier2)
+	
+	// Verify the fix works
+	if fixedResourceName1 == fixedResourceName2 {
+		t.Errorf("Fixed resource names should be unique, but they are identical: %s", fixedResourceName1)
+	}
+	
+	// Verify expected resource names
+	expectedResourceName1 := fmt.Sprintf("service_%s_domain_wildcard_livewaflove_com", sanitizedServiceID)
+	expectedResourceName2 := fmt.Sprintf("service_%s_domain_livewaflove_com", sanitizedServiceID)
+	
+	if fixedResourceName1 != expectedResourceName1 {
+		t.Errorf("Resource name 1 mismatch: got %s, want %s", fixedResourceName1, expectedResourceName1)
+	}
+	
+	if fixedResourceName2 != expectedResourceName2 {
+		t.Errorf("Resource name 2 mismatch: got %s, want %s", fixedResourceName2, expectedResourceName2)
 	}
 }
