@@ -75,30 +75,26 @@ func sanitizeForTerraformResourceName(name, defaultPrefix string) string {
 
 // generateWorkspacePrefixedResourceName creates a workspace-prefixed Terraform resource name
 // for workspace-scoped NGWAF resources to prevent naming conflicts.
-// Format: {sanitized_workspace_id}_{resource_name}
+// Format: {sanitized_workspace_id}_{resource_name}_{sanitized_resource_id}
 func generateWorkspacePrefixedResourceName(workspaceID, resourceName, resourceID, basePrefix string) string {
 	// Sanitize the workspace ID to use as prefix
 	sanitizedWorkspaceID := sanitizeForTerraformResourceName(workspaceID, "ws")
 
+	// Sanitize the resource ID to ensure uniqueness
+	sanitizedResourceID := sanitizeForTerraformResourceName(resourceID, "id")
+
 	// Generate the base resource name
-	baseResourceName := sanitizeForTerraformResourceName(resourceName, basePrefix)
-
-	// If the resource name is empty or problematic, use the resource ID as fallback
-	if resourceName == "" || baseResourceName == basePrefix+"_unnamed" || baseResourceName == basePrefix+"_sanitized_empty" {
-		sanitizedIDForName := sanitizeForTerraformResourceName(resourceID, strings.TrimPrefix(basePrefix, "ngwaf_"))
-		baseResourceName = fmt.Sprintf("%s_%s", basePrefix, sanitizedIDForName)
-	}
-
-	// Remove the base prefix since we'll be adding the workspace prefix
-	if strings.HasPrefix(baseResourceName, basePrefix+"_") {
-		baseResourceName = strings.TrimPrefix(baseResourceName, basePrefix+"_")
-	} else if baseResourceName == basePrefix {
-		// This shouldn't happen with our logic above, but handle it safely
+	var baseResourceName string
+	if resourceName == "" {
+		// Use a generic name when resource name is empty
 		baseResourceName = "resource"
+	} else {
+		baseResourceName = sanitizeForTerraformResourceName(resourceName, "resource")
 	}
 
-	// Combine workspace prefix with resource name
-	return fmt.Sprintf("%s_%s", sanitizedWorkspaceID, baseResourceName)
+	// Combine workspace prefix, resource name, and resource ID to ensure uniqueness
+	// Format: {sanitized_workspace_id}_{resource_name}_{sanitized_resource_id}
+	return fmt.Sprintf("%s_%s_%s", sanitizedWorkspaceID, baseResourceName, sanitizedResourceID)
 }
 
 // validateImportMode validates and normalizes the import mode
