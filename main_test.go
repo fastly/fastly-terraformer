@@ -232,3 +232,46 @@ func TestGenerateWorkspacePrefixedResourceName(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateImportMode(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "valid mode all",
+			input:    "all",
+			expected: "all",
+		},
+		{
+			name:     "valid mode ngwaf",
+			input:    "ngwaf",
+			expected: "ngwaf",
+		},
+		{
+			name:     "invalid mode should default to all",
+			input:    "invalid",
+			expected: "all",
+		},
+		{
+			name:     "empty mode should default to all",
+			input:    "",
+			expected: "all",
+		},
+		{
+			name:     "case sensitive - NGWAF should default to all",
+			input:    "NGWAF",
+			expected: "all",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := validateImportMode(tt.input)
+			if result != tt.expected {
+				t.Errorf("validateImportMode(%q) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
