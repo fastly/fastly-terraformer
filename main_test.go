@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 	
 	"github.com/fastly/go-fastly/v11/fastly"
@@ -177,7 +178,7 @@ func TestGenerateWorkspacePrefixedResourceName(t *testing.T) {
 			resourceName: "SQL Injection Protection",
 			resourceID:   "CVE-2025-12345",
 			basePrefix:   "ngwaf_virtual_patches",
-			expected:     "prod_tf_ngwaf_site_sql_injection_protection",
+			expected:     "prod_tf_ngwaf_site_sql_injection_protection_cve_2025_12345",
 		},
 		{
 			name:         "workspace ID with special chars and empty resource name",
@@ -185,7 +186,7 @@ func TestGenerateWorkspacePrefixedResourceName(t *testing.T) {
 			resourceName: "",
 			resourceID:   "alert-uuid-456",
 			basePrefix:   "ngwaf_alert_slack",
-			expected:     "prod_workspace_123_alert_uuid_456",
+			expected:     "prod_workspace_123_resource_alert_uuid_456",
 		},
 		{
 			name:         "complex workspace ID and resource name",
@@ -193,7 +194,7 @@ func TestGenerateWorkspacePrefixedResourceName(t *testing.T) {
 			resourceName: "Critical Performance Alert",
 			resourceID:   "alert-789",
 			basePrefix:   "ngwaf_alert_datadog",
-			expected:     "a1b2c3d4_e5f6_7890_abcd_ef1234567890_critical_performance_alert",
+			expected:     "a1b2c3d4_e5f6_7890_abcd_ef1234567890_critical_performance_alert_alert_789",
 		},
 		{
 			name:         "workspace with numbers and threshold",
@@ -201,7 +202,7 @@ func TestGenerateWorkspacePrefixedResourceName(t *testing.T) {
 			resourceName: "Rate Limit Threshold",
 			resourceID:   "threshold-abc",
 			basePrefix:   "ngwaf_thresholds",
-			expected:     "tf_123workspace_rate_limit_threshold",
+			expected:     "tf_123workspace_rate_limit_threshold_threshold_abc",
 		},
 		{
 			name:         "redaction field with underscores",
@@ -209,7 +210,7 @@ func TestGenerateWorkspacePrefixedResourceName(t *testing.T) {
 			resourceName: "user_password",
 			resourceID:   "redaction-123",
 			basePrefix:   "ngwaf_redaction",
-			expected:     "dev_workspace_user_password",
+			expected:     "dev_workspace_user_password_redaction_123",
 		},
 		{
 			name:         "empty resource name falls back to ID",
@@ -217,7 +218,7 @@ func TestGenerateWorkspacePrefixedResourceName(t *testing.T) {
 			resourceName: "",
 			resourceID:   "virtual-patch-456",
 			basePrefix:   "ngwaf_virtual_patches",
-			expected:     "test_ws_virtual_patch_456",
+			expected:     "test_ws_resource_virtual_patch_456",
 		},
 		{
 			name:         "resource name with problematic characters",
@@ -225,7 +226,7 @@ func TestGenerateWorkspacePrefixedResourceName(t *testing.T) {
 			resourceName: "Test-Alert!@#$%",
 			resourceID:   "alert-999",
 			basePrefix:   "ngwaf_alert_webhook",
-			expected:     "workspace_one_test_alert",
+			expected:     "workspace_one_test_alert_alert_999",
 		},
 	}
 
@@ -237,6 +238,56 @@ func TestGenerateWorkspacePrefixedResourceName(t *testing.T) {
 					tt.workspaceID, tt.resourceName, tt.resourceID, tt.basePrefix, result, tt.expected)
 			}
 		})
+	}
+}
+
+// TestGenerateWorkspacePrefixedResourceNameUniqueness tests that resources with the same name get unique identifiers
+func TestGenerateWorkspacePrefixedResourceNameUniqueness(t *testing.T) {
+	// Test scenario: Multiple resources with the same name should generate unique resource names
+	workspaceID := "dev_tf_ngwaf_site"
+	resourceName := "foo" // Same name for both resources
+	basePrefix := "ngwaf_workspace_rule"
+	
+	// Two different resource IDs representing the same named resources
+	resourceID1 := "67f92e6930d0ab5d50ceca89"
+	resourceID2 := "67f919f39c8407b6764e942f"
+	
+	result1 := generateWorkspacePrefixedResourceName(workspaceID, resourceName, resourceID1, basePrefix)
+	result2 := generateWorkspacePrefixedResourceName(workspaceID, resourceName, resourceID2, basePrefix)
+	
+	// Results should be different to avoid duplicate import blocks
+	if result1 == result2 {
+		t.Errorf("Expected different resource names for same-named resources, but got: %q and %q", result1, result2)
+	}
+	
+	// Both should contain the resource name
+	if !strings.Contains(result1, "foo") {
+		t.Errorf("Expected result1 %q to contain resource name 'foo'", result1)
+	}
+	if !strings.Contains(result2, "foo") {
+		t.Errorf("Expected result2 %q to contain resource name 'foo'", result2)
+	}
+	
+	// Both should contain their respective resource IDs to ensure uniqueness
+	expectedSubstring1 := "tf_67f92e6930d0ab5d50ceca89"
+	expectedSubstring2 := "tf_67f919f39c8407b6764e942f"
+	
+	if !strings.Contains(result1, expectedSubstring1) {
+		t.Errorf("Expected result1 %q to contain resource ID substring %q", result1, expectedSubstring1)
+	}
+	if !strings.Contains(result2, expectedSubstring2) {
+		t.Errorf("Expected result2 %q to contain resource ID substring %q", result2, expectedSubstring2)
+	}
+	
+	// Verify both results follow the expected pattern: workspace_resourcename_resourceid
+	expectedPattern1 := "dev_tf_ngwaf_site_foo_tf_67f92e6930d0ab5d50ceca89"
+	expectedPattern2 := "dev_tf_ngwaf_site_foo_tf_67f919f39c8407b6764e942f"
+	
+	if result1 != expectedPattern1 {
+		t.Errorf("Expected result1 to be %q, got %q", expectedPattern1, result1)
+	}
+	if result2 != expectedPattern2 {
+		t.Errorf("Expected result2 to be %q, got %q", expectedPattern2, result2)
 	}
 }
 
