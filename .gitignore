@@ -46,3 +46,7 @@ import.tf
 generated.tf
 mod
 fastly-terraformer
+
+# Coverage files
+coverage.out
+coverage.html

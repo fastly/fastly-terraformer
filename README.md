@@ -1,5 +1,7 @@
 # fastly-terraformer
 
+[![Tests](https://github.com/fastly/fastly-terraformer/actions/workflows/test.yml/badge.svg)](https://github.com/fastly/fastly-terraformer/actions/workflows/test.yml)
+
 `fastly-terraformer` is a specialized tool that generates Terraform import blocks for Fastly Edge Cloud resources. It automatically discovers your existing Fastly infrastructure and creates the necessary Terraform import statements to bring those resources under Terraform management.
 
 ## Features
