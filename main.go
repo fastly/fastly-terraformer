@@ -1223,6 +1223,837 @@ func importServiceDirectors(client *fastly.Client, rootBody *hclwrite.Body, serv
 	return importCount, nil
 }
 
+// importServiceRequestSettings handles importing Fastly service request setting resources
+func importServiceRequestSettings(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+
+	if services == nil || len(services) == 0 {
+		fmt.Println("No services available for request setting imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service request settings...")
+
+	for _, service := range services {
+		var serviceIDValue string
+		if service.ServiceID != nil {
+			serviceIDValue = *service.ServiceID
+		}
+
+		var serviceName string
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		if serviceIDValue == "" {
+			log.Printf("Skipping service with empty ID (Name: %s) for request setting imports\n", serviceName)
+			continue
+		}
+
+		// Get the active version for this service
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceIDValue})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping request settings.", serviceIDValue, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping request settings.", serviceIDValue)
+			continue
+		}
+
+		fmt.Printf("  Fetching request settings for service: %s (ID: %s, version: %d)\n", serviceName, serviceIDValue, activeVersionNumber)
+
+		requestSettings, err := client.ListRequestSettings(context.Background(), &fastly.ListRequestSettingsInput{
+			ServiceID:      serviceIDValue,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("    Error listing request settings for service ID %s, version %d: %v", serviceIDValue, activeVersionNumber, err)
+			continue
+		}
+
+		if len(requestSettings) == 0 {
+			fmt.Printf("    No request settings found for service %s\n", serviceName)
+		} else {
+			fmt.Printf("    Found %d request setting(s) for service %s\n", len(requestSettings), serviceName)
+
+			for _, requestSetting := range requestSettings {
+				if requestSetting.Name == nil || *requestSetting.Name == "" {
+					log.Printf("      Skipping request setting with empty name for service ID %s", serviceIDValue)
+					continue
+				}
+
+				requestSettingName := *requestSetting.Name
+				importID := fmt.Sprintf("%s/%s", serviceIDValue, requestSettingName)
+
+				// Generate resource name
+				tfRequestSettingResourceName := sanitizeForTerraformResourceName(requestSettingName, "request_setting")
+				
+				// Ensure uniqueness by adding service ID
+				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
+				tfRequestSettingResourceName = fmt.Sprintf("%s_%s", tfRequestSettingResourceName, sanitizedServiceID)
+
+				requestSettingImportBlock := rootBody.AppendNewBlock("import", nil)
+				requestSettingImportBody := requestSettingImportBlock.Body()
+				requestSettingImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+				requestSettingImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_service_request_setting"},
+					hcl.TraverseAttr{Name: tfRequestSettingResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("      Added import for request setting: %s (Import ID: %s) as fastly_service_request_setting.%s\n", requestSettingName, importID, tfRequestSettingResourceName)
+			}
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServiceResponseObjects handles importing Fastly service response object resources
+func importServiceResponseObjects(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+
+	if services == nil || len(services) == 0 {
+		fmt.Println("No services available for response object imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service response objects...")
+
+	for _, service := range services {
+		var serviceIDValue string
+		if service.ServiceID != nil {
+			serviceIDValue = *service.ServiceID
+		}
+
+		var serviceName string
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		if serviceIDValue == "" {
+			log.Printf("Skipping service with empty ID (Name: %s) for response object imports\n", serviceName)
+			continue
+		}
+
+		// Get the active version for this service
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceIDValue})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping response objects.", serviceIDValue, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping response objects.", serviceIDValue)
+			continue
+		}
+
+		fmt.Printf("  Fetching response objects for service: %s (ID: %s, version: %d)\n", serviceName, serviceIDValue, activeVersionNumber)
+
+		responseObjects, err := client.ListResponseObjects(context.Background(), &fastly.ListResponseObjectsInput{
+			ServiceID:      serviceIDValue,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("    Error listing response objects for service ID %s, version %d: %v", serviceIDValue, activeVersionNumber, err)
+			continue
+		}
+
+		if len(responseObjects) == 0 {
+			fmt.Printf("    No response objects found for service %s\n", serviceName)
+		} else {
+			fmt.Printf("    Found %d response object(s) for service %s\n", len(responseObjects), serviceName)
+
+			for _, responseObject := range responseObjects {
+				if responseObject.Name == nil || *responseObject.Name == "" {
+					log.Printf("      Skipping response object with empty name for service ID %s", serviceIDValue)
+					continue
+				}
+
+				responseObjectName := *responseObject.Name
+				importID := fmt.Sprintf("%s/%s", serviceIDValue, responseObjectName)
+
+				// Generate resource name
+				tfResponseObjectResourceName := sanitizeForTerraformResourceName(responseObjectName, "response_object")
+				
+				// Ensure uniqueness by adding service ID
+				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
+				tfResponseObjectResourceName = fmt.Sprintf("%s_%s", tfResponseObjectResourceName, sanitizedServiceID)
+
+				responseObjectImportBlock := rootBody.AppendNewBlock("import", nil)
+				responseObjectImportBody := responseObjectImportBlock.Body()
+				responseObjectImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+				responseObjectImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_service_response_object"},
+					hcl.TraverseAttr{Name: tfResponseObjectResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("      Added import for response object: %s (Import ID: %s) as fastly_service_response_object.%s\n", responseObjectName, importID, tfResponseObjectResourceName)
+			}
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServiceStaticSnippets handles importing Fastly service static VCL snippet resources
+func importServiceStaticSnippets(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+
+	if services == nil || len(services) == 0 {
+		fmt.Println("No services available for static snippet imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service static VCL snippets...")
+
+	for _, service := range services {
+		var serviceIDValue string
+		if service.ServiceID != nil {
+			serviceIDValue = *service.ServiceID
+		}
+
+		var serviceName string
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		var serviceType string
+		if service.Type != nil {
+			serviceType = *service.Type
+		}
+
+		if serviceIDValue == "" {
+			log.Printf("Skipping service with empty ID (Name: %s) for static snippet imports\n", serviceName)
+			continue
+		}
+
+		// Only process VCL services for static snippets
+		if serviceType != "vcl" {
+			fmt.Printf("  Skipping service %s (ID: %s) - static snippets only available for VCL services\n", serviceName, serviceIDValue)
+			continue
+		}
+
+		// Get the active version for this service
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceIDValue})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping static snippets.", serviceIDValue, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping static snippets.", serviceIDValue)
+			continue
+		}
+
+		fmt.Printf("  Fetching static snippets for VCL service: %s (ID: %s, version: %d)\n", serviceName, serviceIDValue, activeVersionNumber)
+
+		snippets, err := client.ListSnippets(context.Background(), &fastly.ListSnippetsInput{
+			ServiceID:      serviceIDValue,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("    Error listing snippets for service ID %s, version %d: %v", serviceIDValue, activeVersionNumber, err)
+			continue
+		}
+
+		staticSnippetCount := 0
+		for _, snippet := range snippets {
+			// Filter for static snippets (Dynamic == 0 or nil)
+			isStatic := true
+			if snippet.Dynamic != nil && *snippet.Dynamic == 1 {
+				isStatic = false
+			}
+
+			if isStatic {
+				staticSnippetCount++
+				
+				if snippet.Name == nil || *snippet.Name == "" {
+					log.Printf("      Skipping static snippet with empty name for service ID %s", serviceIDValue)
+					continue
+				}
+
+				snippetName := *snippet.Name
+				importID := fmt.Sprintf("%s/%s", serviceIDValue, snippetName)
+
+				// Generate resource name
+				tfSnippetResourceName := sanitizeForTerraformResourceName(snippetName, "snippet")
+				
+				// Ensure uniqueness by adding service ID
+				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
+				tfSnippetResourceName = fmt.Sprintf("%s_%s", tfSnippetResourceName, sanitizedServiceID)
+
+				snippetImportBlock := rootBody.AppendNewBlock("import", nil)
+				snippetImportBody := snippetImportBlock.Body()
+				snippetImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+				snippetImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_service_snippet"},
+					hcl.TraverseAttr{Name: tfSnippetResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("      Added import for static snippet: %s (Import ID: %s) as fastly_service_snippet.%s\n", snippetName, importID, tfSnippetResourceName)
+			}
+		}
+
+		if staticSnippetCount == 0 {
+			fmt.Printf("    No static snippets found for service %s\n", serviceName)
+		} else {
+			fmt.Printf("    Found %d static snippet(s) for service %s\n", staticSnippetCount, serviceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServiceVCLs handles importing Fastly service VCL file resources
+func importServiceVCLs(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+
+	if services == nil || len(services) == 0 {
+		fmt.Println("No services available for VCL imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service VCL files...")
+
+	for _, service := range services {
+		var serviceIDValue string
+		if service.ServiceID != nil {
+			serviceIDValue = *service.ServiceID
+		}
+
+		var serviceName string
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		var serviceType string
+		if service.Type != nil {
+			serviceType = *service.Type
+		}
+
+		if serviceIDValue == "" {
+			log.Printf("Skipping service with empty ID (Name: %s) for VCL imports\n", serviceName)
+			continue
+		}
+
+		// Only process VCL services for VCL files
+		if serviceType != "vcl" {
+			fmt.Printf("  Skipping service %s (ID: %s) - VCL files only available for VCL services\n", serviceName, serviceIDValue)
+			continue
+		}
+
+		// Get the active version for this service
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceIDValue})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping VCL files.", serviceIDValue, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping VCL files.", serviceIDValue)
+			continue
+		}
+
+		fmt.Printf("  Fetching VCL files for VCL service: %s (ID: %s, version: %d)\n", serviceName, serviceIDValue, activeVersionNumber)
+
+		vcls, err := client.ListVCLs(context.Background(), &fastly.ListVCLsInput{
+			ServiceID:      serviceIDValue,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("    Error listing VCL files for service ID %s, version %d: %v", serviceIDValue, activeVersionNumber, err)
+			continue
+		}
+
+		if len(vcls) == 0 {
+			fmt.Printf("    No VCL files found for service %s\n", serviceName)
+		} else {
+			fmt.Printf("    Found %d VCL file(s) for service %s\n", len(vcls), serviceName)
+
+			for _, vcl := range vcls {
+				if vcl.Name == nil || *vcl.Name == "" {
+					log.Printf("      Skipping VCL file with empty name for service ID %s", serviceIDValue)
+					continue
+				}
+
+				vclName := *vcl.Name
+				importID := fmt.Sprintf("%s/%s", serviceIDValue, vclName)
+
+				// Generate resource name
+				tfVCLResourceName := sanitizeForTerraformResourceName(vclName, "vcl")
+				
+				// Ensure uniqueness by adding service ID
+				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
+				tfVCLResourceName = fmt.Sprintf("%s_%s", tfVCLResourceName, sanitizedServiceID)
+
+				vclImportBlock := rootBody.AppendNewBlock("import", nil)
+				vclImportBody := vclImportBlock.Body()
+				vclImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+				vclImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_service_vcl"},
+					hcl.TraverseAttr{Name: tfVCLResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("      Added import for VCL file: %s (Import ID: %s) as fastly_service_vcl.%s\n", vclName, importID, tfVCLResourceName)
+			}
+		}
+	}
+
+	return importCount, nil
+}
+
+// importUsers handles importing Fastly user resources
+func importUsers(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly users...")
+
+	users, err := client.ListCustomerUsers(context.Background(), &fastly.ListCustomerUsersInput{})
+	if err != nil {
+		log.Printf("Error listing users: %v. Skipping user imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if len(users) == 0 {
+		fmt.Println("No users found for this account.")
+	} else {
+		fmt.Printf("Found %d user(s). Adding to import.tf...\n", len(users))
+
+		for _, user := range users {
+			if user.UserID == nil || *user.UserID == "" {
+				log.Printf("Skipping user with empty ID\n")
+				continue
+			}
+
+			userID := *user.UserID
+			var userName string
+			if user.Name != nil {
+				userName = *user.Name
+			}
+
+			// Generate resource name using user name if available, otherwise use ID
+			var tfUserResourceName string
+			if userName != "" {
+				tfUserResourceName = sanitizeForTerraformResourceName(userName, "user")
+			} else {
+				tfUserResourceName = sanitizeForTerraformResourceName(userID, "user")
+			}
+
+			// Ensure uniqueness by adding user ID suffix
+			sanitizedUserID := sanitizeForTerraformResourceName(userID, "id")
+			tfUserResourceName = fmt.Sprintf("%s_%s", tfUserResourceName, sanitizedUserID)
+
+			userImportBlock := rootBody.AppendNewBlock("import", nil)
+			userImportBody := userImportBlock.Body()
+			userImportBody.SetAttributeValue("id", cty.StringVal(userID))
+
+			userImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_user"},
+				hcl.TraverseAttr{Name: tfUserResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("  Added import for user: %s (ID: %s) as fastly_user.%s\n", userName, userID, tfUserResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServiceAuthorizations handles importing Fastly service authorization resources
+func importServiceAuthorizations(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly service authorizations...")
+
+	serviceAuthorizations, err := client.ListServiceAuthorizations(context.Background(), &fastly.ListServiceAuthorizationsInput{})
+	if err != nil {
+		log.Printf("Error listing service authorizations: %v. Skipping service authorization imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if serviceAuthorizations == nil || len(serviceAuthorizations.Items) == 0 {
+		fmt.Println("No service authorizations found for this account.")
+	} else {
+		fmt.Printf("Found %d service authorization(s). Adding to import.tf...\n", len(serviceAuthorizations.Items))
+
+		for _, serviceAuth := range serviceAuthorizations.Items {
+			if serviceAuth.ID == "" {
+				log.Printf("Skipping service authorization with empty ID\n")
+				continue
+			}
+
+			serviceAuthID := serviceAuth.ID
+
+			// Generate resource name using service auth ID
+			tfServiceAuthResourceName := sanitizeForTerraformResourceName(serviceAuthID, "service_authorization")
+
+			serviceAuthImportBlock := rootBody.AppendNewBlock("import", nil)
+			serviceAuthImportBody := serviceAuthImportBlock.Body()
+			serviceAuthImportBody.SetAttributeValue("id", cty.StringVal(serviceAuthID))
+
+			serviceAuthImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_service_authorization"},
+				hcl.TraverseAttr{Name: tfServiceAuthResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			// Show service and user info if available
+			var serviceInfo, userInfo string
+			if serviceAuth.Service != nil && serviceAuth.Service.ID != "" {
+				serviceInfo = fmt.Sprintf("Service: %s", serviceAuth.Service.ID)
+			}
+			if serviceAuth.User != nil && serviceAuth.User.ID != "" {
+				userInfo = fmt.Sprintf("User: %s", serviceAuth.User.ID)
+			}
+
+			fmt.Printf("  Added import for service authorization: %s (%s, %s) as fastly_service_authorization.%s\n", serviceAuthID, serviceInfo, userInfo, tfServiceAuthResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServiceS3Logging handles importing Fastly service S3 logging resources
+func importServiceS3Logging(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+
+	if services == nil || len(services) == 0 {
+		fmt.Println("No services available for S3 logging imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service S3 logging endpoints...")
+
+	for _, service := range services {
+		var serviceIDValue string
+		if service.ServiceID != nil {
+			serviceIDValue = *service.ServiceID
+		}
+
+		var serviceName string
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		if serviceIDValue == "" {
+			log.Printf("Skipping service with empty ID (Name: %s) for S3 logging imports\n", serviceName)
+			continue
+		}
+
+		// Get the active version for this service
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceIDValue})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping S3 logging.", serviceIDValue, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping S3 logging.", serviceIDValue)
+			continue
+		}
+
+		fmt.Printf("  Fetching S3 logging endpoints for service: %s (ID: %s, version: %d)\n", serviceName, serviceIDValue, activeVersionNumber)
+
+		s3Logs, err := client.ListS3s(context.Background(), &fastly.ListS3sInput{
+			ServiceID:      serviceIDValue,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("    Error listing S3 logging endpoints for service ID %s, version %d: %v", serviceIDValue, activeVersionNumber, err)
+			continue
+		}
+
+		if len(s3Logs) == 0 {
+			fmt.Printf("    No S3 logging endpoints found for service %s\n", serviceName)
+		} else {
+			fmt.Printf("    Found %d S3 logging endpoint(s) for service %s\n", len(s3Logs), serviceName)
+
+			for _, s3Log := range s3Logs {
+				if s3Log.Name == nil || *s3Log.Name == "" {
+					log.Printf("      Skipping S3 logging endpoint with empty name for service ID %s", serviceIDValue)
+					continue
+				}
+
+				s3LogName := *s3Log.Name
+				importID := fmt.Sprintf("%s/%s", serviceIDValue, s3LogName)
+
+				// Generate resource name
+				tfS3LogResourceName := sanitizeForTerraformResourceName(s3LogName, "s3_logging")
+				
+				// Ensure uniqueness by adding service ID
+				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
+				tfS3LogResourceName = fmt.Sprintf("%s_%s", tfS3LogResourceName, sanitizedServiceID)
+
+				s3LogImportBlock := rootBody.AppendNewBlock("import", nil)
+				s3LogImportBody := s3LogImportBlock.Body()
+				s3LogImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+				s3LogImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_service_logging_s3"},
+					hcl.TraverseAttr{Name: tfS3LogResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("      Added import for S3 logging: %s (Import ID: %s) as fastly_service_logging_s3.%s\n", s3LogName, importID, tfS3LogResourceName)
+			}
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServiceSyslogLogging handles importing Fastly service Syslog logging resources
+func importServiceSyslogLogging(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+
+	if services == nil || len(services) == 0 {
+		fmt.Println("No services available for Syslog logging imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service Syslog logging endpoints...")
+
+	for _, service := range services {
+		var serviceIDValue string
+		if service.ServiceID != nil {
+			serviceIDValue = *service.ServiceID
+		}
+
+		var serviceName string
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		if serviceIDValue == "" {
+			log.Printf("Skipping service with empty ID (Name: %s) for Syslog logging imports\n", serviceName)
+			continue
+		}
+
+		// Get the active version for this service
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceIDValue})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping Syslog logging.", serviceIDValue, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping Syslog logging.", serviceIDValue)
+			continue
+		}
+
+		fmt.Printf("  Fetching Syslog logging endpoints for service: %s (ID: %s, version: %d)\n", serviceName, serviceIDValue, activeVersionNumber)
+
+		syslogLogs, err := client.ListSyslogs(context.Background(), &fastly.ListSyslogsInput{
+			ServiceID:      serviceIDValue,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("    Error listing Syslog logging endpoints for service ID %s, version %d: %v", serviceIDValue, activeVersionNumber, err)
+			continue
+		}
+
+		if len(syslogLogs) == 0 {
+			fmt.Printf("    No Syslog logging endpoints found for service %s\n", serviceName)
+		} else {
+			fmt.Printf("    Found %d Syslog logging endpoint(s) for service %s\n", len(syslogLogs), serviceName)
+
+			for _, syslogLog := range syslogLogs {
+				if syslogLog.Name == nil || *syslogLog.Name == "" {
+					log.Printf("      Skipping Syslog logging endpoint with empty name for service ID %s", serviceIDValue)
+					continue
+				}
+
+				syslogLogName := *syslogLog.Name
+				importID := fmt.Sprintf("%s/%s", serviceIDValue, syslogLogName)
+
+				// Generate resource name
+				tfSyslogLogResourceName := sanitizeForTerraformResourceName(syslogLogName, "syslog_logging")
+				
+				// Ensure uniqueness by adding service ID
+				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
+				tfSyslogLogResourceName = fmt.Sprintf("%s_%s", tfSyslogLogResourceName, sanitizedServiceID)
+
+				syslogLogImportBlock := rootBody.AppendNewBlock("import", nil)
+				syslogLogImportBody := syslogLogImportBlock.Body()
+				syslogLogImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+				syslogLogImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_service_logging_syslog"},
+					hcl.TraverseAttr{Name: tfSyslogLogResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("      Added import for Syslog logging: %s (Import ID: %s) as fastly_service_logging_syslog.%s\n", syslogLogName, importID, tfSyslogLogResourceName)
+			}
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServiceDatadogLogging handles importing Fastly service Datadog logging resources
+func importServiceDatadogLogging(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+
+	if services == nil || len(services) == 0 {
+		fmt.Println("No services available for Datadog logging imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service Datadog logging endpoints...")
+
+	for _, service := range services {
+		var serviceIDValue string
+		if service.ServiceID != nil {
+			serviceIDValue = *service.ServiceID
+		}
+
+		var serviceName string
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		if serviceIDValue == "" {
+			log.Printf("Skipping service with empty ID (Name: %s) for Datadog logging imports\n", serviceName)
+			continue
+		}
+
+		// Get the active version for this service
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceIDValue})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping Datadog logging.", serviceIDValue, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping Datadog logging.", serviceIDValue)
+			continue
+		}
+
+		fmt.Printf("  Fetching Datadog logging endpoints for service: %s (ID: %s, version: %d)\n", serviceName, serviceIDValue, activeVersionNumber)
+
+		datadogLogs, err := client.ListDatadog(context.Background(), &fastly.ListDatadogInput{
+			ServiceID:      serviceIDValue,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("    Error listing Datadog logging endpoints for service ID %s, version %d: %v", serviceIDValue, activeVersionNumber, err)
+			continue
+		}
+
+		if len(datadogLogs) == 0 {
+			fmt.Printf("    No Datadog logging endpoints found for service %s\n", serviceName)
+		} else {
+			fmt.Printf("    Found %d Datadog logging endpoint(s) for service %s\n", len(datadogLogs), serviceName)
+
+			for _, datadogLog := range datadogLogs {
+				if datadogLog.Name == nil || *datadogLog.Name == "" {
+					log.Printf("      Skipping Datadog logging endpoint with empty name for service ID %s", serviceIDValue)
+					continue
+				}
+
+				datadogLogName := *datadogLog.Name
+				importID := fmt.Sprintf("%s/%s", serviceIDValue, datadogLogName)
+
+				// Generate resource name
+				tfDatadogLogResourceName := sanitizeForTerraformResourceName(datadogLogName, "datadog_logging")
+				
+				// Ensure uniqueness by adding service ID
+				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
+				tfDatadogLogResourceName = fmt.Sprintf("%s_%s", tfDatadogLogResourceName, sanitizedServiceID)
+
+				datadogLogImportBlock := rootBody.AppendNewBlock("import", nil)
+				datadogLogImportBody := datadogLogImportBlock.Body()
+				datadogLogImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+				datadogLogImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_service_logging_datadog"},
+					hcl.TraverseAttr{Name: tfDatadogLogResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("      Added import for Datadog logging: %s (Import ID: %s) as fastly_service_logging_datadog.%s\n", datadogLogName, importID, tfDatadogLogResourceName)
+			}
+		}
+	}
+
+	return importCount, nil
+}
+
 // importNGWAFWorkspaceLists handles importing NGWAF workspace-scoped list resources
 func importNGWAFWorkspaceLists(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
 	importCount := 0
@@ -2150,6 +2981,49 @@ func main() {
 			importCount += serviceDirectorImportCount
 		}
 
+		// Import service request settings for all services
+		serviceRequestSettingImportCount, err := importServiceRequestSettings(client, rootBody, services)
+		if err == nil {
+			importCount += serviceRequestSettingImportCount
+		}
+
+		// Import service response objects for all services
+		serviceResponseObjectImportCount, err := importServiceResponseObjects(client, rootBody, services)
+		if err == nil {
+			importCount += serviceResponseObjectImportCount
+		}
+
+		// Import service static VCL snippets for VCL services
+		serviceStaticSnippetImportCount, err := importServiceStaticSnippets(client, rootBody, services)
+		if err == nil {
+			importCount += serviceStaticSnippetImportCount
+		}
+
+		// Import service VCL files for VCL services
+		serviceVCLImportCount, err := importServiceVCLs(client, rootBody, services)
+		if err == nil {
+			importCount += serviceVCLImportCount
+		}
+
+		// --- 3c. Process Service Logging Resources ---
+		// Import S3 logging endpoints for all services
+		serviceS3LogImportCount, err := importServiceS3Logging(client, rootBody, services)
+		if err == nil {
+			importCount += serviceS3LogImportCount
+		}
+
+		// Import Syslog logging endpoints for all services
+		serviceSyslogImportCount, err := importServiceSyslogLogging(client, rootBody, services)
+		if err == nil {
+			importCount += serviceSyslogImportCount
+		}
+
+		// Import Datadog logging endpoints for all services
+		serviceDatadogImportCount, err := importServiceDatadogLogging(client, rootBody, services)
+		if err == nil {
+			importCount += serviceDatadogImportCount
+		}
+
 		// --- 4. Process Store Resources ---
 		configStoreImportCount, err := importConfigStores(client, rootBody)
 		if err == nil {
@@ -2177,7 +3051,18 @@ func main() {
 			importCount += tlsActivationImportCount
 		}
 
-		// --- 6. Process NGWAF Resources ---
+		// --- 6. Process User and Authorization Resources ---
+		userImportCount, err := importUsers(client, rootBody)
+		if err == nil {
+			importCount += userImportCount
+		}
+
+		serviceAuthorizationImportCount, err := importServiceAuthorizations(client, rootBody)
+		if err == nil {
+			importCount += serviceAuthorizationImportCount
+		}
+
+		// --- 7. Process NGWAF Resources ---
 		ngwafWorkspaces, workspaceImportCount, err := importNGWAFWorkspaces(client, rootBody)
 		if err == nil {
 			importCount += workspaceImportCount
