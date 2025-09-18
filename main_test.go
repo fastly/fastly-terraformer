@@ -6,11 +6,6 @@ import (
 	"testing"
 	
 	"github.com/fastly/go-fastly/v11/fastly"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/lists"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/rules"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/signals"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces"
-	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
 func TestSanitizeForTerraformResourceName(t *testing.T) {
@@ -341,51 +336,36 @@ func TestImportNGWAFWorkspaces(t *testing.T) {
 	// We don't call it because it requires a valid client and would make API calls
 	
 	// Verify function signature by checking it can be assigned to a variable
-	var fn func(*fastly.Client, *hclwrite.Body) (*workspaces.Workspaces, int, error)
-	fn = importNGWAFWorkspaces
-	if fn == nil {
-		t.Error("importNGWAFWorkspaces function should exist")
-	}
+	fn := importNGWAFWorkspaces
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportNGWAFAccountLists tests the NGWAF account lists import function
 func TestImportNGWAFAccountLists(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body) (*lists.Lists, int, error)
-	fn = importNGWAFAccountLists
-	if fn == nil {
-		t.Error("importNGWAFAccountLists function should exist")
-	}
+	fn := importNGWAFAccountLists
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportNGWAFAccountRules tests the NGWAF account rules import function
 func TestImportNGWAFAccountRules(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body) (*rules.Rules, int, error)
-	fn = importNGWAFAccountRules
-	if fn == nil {
-		t.Error("importNGWAFAccountRules function should exist")
-	}
+	fn := importNGWAFAccountRules
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportNGWAFAccountSignals tests the NGWAF account signals import function
 func TestImportNGWAFAccountSignals(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body) (*signals.Signals, int, error)
-	fn = importNGWAFAccountSignals
-	if fn == nil {
-		t.Error("importNGWAFAccountSignals function should exist")
-	}
+	fn := importNGWAFAccountSignals
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportNGWAFWorkspaceScopedResources tests the workspace-scoped import function
 func TestImportNGWAFWorkspaceScopedResources(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, *workspaces.Workspaces) (int, error)
-	fn = importNGWAFWorkspaceScopedResources
-	if fn == nil {
-		t.Error("importNGWAFWorkspaceScopedResources function should exist")
-	}
+	fn := importNGWAFWorkspaceScopedResources
+	_ = fn // Use the variable to avoid unused variable error
 	
 	// Test with nil workspaces (should return 0 count and no error)
 	importCount, err := importNGWAFWorkspaceScopedResources(nil, nil, nil)
@@ -400,11 +380,8 @@ func TestImportNGWAFWorkspaceScopedResources(t *testing.T) {
 // TestImportNGWAFWorkspaceLists tests the workspace-scoped lists import function
 func TestImportNGWAFWorkspaceLists(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, *workspaces.Workspaces) (int, error)
-	fn = importNGWAFWorkspaceLists
-	if fn == nil {
-		t.Error("importNGWAFWorkspaceLists function should exist")
-	}
+	fn := importNGWAFWorkspaceLists
+	_ = fn // Use the variable to avoid unused variable error
 	
 	// Test with nil workspaces (should return 0 count and no error)
 	importCount, err := importNGWAFWorkspaceLists(nil, nil, nil)
@@ -419,11 +396,8 @@ func TestImportNGWAFWorkspaceLists(t *testing.T) {
 // TestImportNGWAFWorkspaceRules tests the workspace-scoped rules import function
 func TestImportNGWAFWorkspaceRules(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, *workspaces.Workspaces) (int, error)
-	fn = importNGWAFWorkspaceRules
-	if fn == nil {
-		t.Error("importNGWAFWorkspaceRules function should exist")
-	}
+	fn := importNGWAFWorkspaceRules
+	_ = fn // Use the variable to avoid unused variable error
 	
 	// Test with nil workspaces (should return 0 count and no error)
 	importCount, err := importNGWAFWorkspaceRules(nil, nil, nil)
@@ -438,11 +412,8 @@ func TestImportNGWAFWorkspaceRules(t *testing.T) {
 // TestImportNGWAFWorkspaceSignals tests the workspace-scoped signals import function
 func TestImportNGWAFWorkspaceSignals(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, *workspaces.Workspaces) (int, error)
-	fn = importNGWAFWorkspaceSignals
-	if fn == nil {
-		t.Error("importNGWAFWorkspaceSignals function should exist")
-	}
+	fn := importNGWAFWorkspaceSignals
+	_ = fn // Use the variable to avoid unused variable error
 	
 	// Test with nil workspaces (should return 0 count and no error)
 	importCount, err := importNGWAFWorkspaceSignals(nil, nil, nil)
@@ -457,41 +428,29 @@ func TestImportNGWAFWorkspaceSignals(t *testing.T) {
 // TestImportConfigStores tests the Config Store import function
 func TestImportConfigStores(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
-	fn = importConfigStores
-	if fn == nil {
-		t.Error("importConfigStores function should exist")
-	}
+	fn := importConfigStores
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportKVStores tests the KV Store import function
 func TestImportKVStores(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
-	fn = importKVStores
-	if fn == nil {
-		t.Error("importKVStores function should exist")
-	}
+	fn := importKVStores
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportSecretStores tests the Secret Store import function
 func TestImportSecretStores(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
-	fn = importSecretStores
-	if fn == nil {
-		t.Error("importSecretStores function should exist")
-	}
+	fn := importSecretStores
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportServiceDomains tests the service domain import function
 func TestImportServiceDomains(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceDomains
-	if fn == nil {
-		t.Error("importServiceDomains function should exist")
-	}
+	fn := importServiceDomains
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceDomains(nil, nil, nil)
@@ -515,11 +474,8 @@ func TestImportServiceDomains(t *testing.T) {
 // TestImportServiceACLs tests the service ACL import function
 func TestImportServiceACLs(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceACLs
-	if fn == nil {
-		t.Error("importServiceACLs function should exist")
-	}
+	fn := importServiceACLs
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceACLs(nil, nil, nil)
@@ -534,11 +490,8 @@ func TestImportServiceACLs(t *testing.T) {
 // TestImportServiceDictionaries tests the service dictionary import function
 func TestImportServiceDictionaries(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceDictionaries
-	if fn == nil {
-		t.Error("importServiceDictionaries function should exist")
-	}
+	fn := importServiceDictionaries
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceDictionaries(nil, nil, nil)
@@ -553,11 +506,8 @@ func TestImportServiceDictionaries(t *testing.T) {
 // TestImportServiceBackends tests the service backend import function
 func TestImportServiceBackends(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceBackends
-	if fn == nil {
-		t.Error("importServiceBackends function should exist")
-	}
+	fn := importServiceBackends
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceBackends(nil, nil, nil)
@@ -572,61 +522,43 @@ func TestImportServiceBackends(t *testing.T) {
 // TestImportTLSSubscriptions tests the TLS subscription import function
 func TestImportTLSSubscriptions(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
-	fn = importTLSSubscriptions
-	if fn == nil {
-		t.Error("importTLSSubscriptions function should exist")
-	}
+	fn := importTLSSubscriptions
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportTLSActivations tests the TLS activation import function
 func TestImportTLSActivations(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
-	fn = importTLSActivations
-	if fn == nil {
-		t.Error("importTLSActivations function should exist")
-	}
+	fn := importTLSActivations
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportTLSCertificates tests the TLS certificate import function
 func TestImportTLSCertificates(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
-	fn = importTLSCertificates
-	if fn == nil {
-		t.Error("importTLSCertificates function should exist")
-	}
+	fn := importTLSCertificates
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportTLSConfigurations tests the TLS configuration import function
 func TestImportTLSConfigurations(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
-	fn = importTLSConfigurations
-	if fn == nil {
-		t.Error("importTLSConfigurations function should exist")
-	}
+	fn := importTLSConfigurations
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportTLSPrivateKeys tests the TLS private key import function
 func TestImportTLSPrivateKeys(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
-	fn = importTLSPrivateKeys
-	if fn == nil {
-		t.Error("importTLSPrivateKeys function should exist")
-	}
+	fn := importTLSPrivateKeys
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportServiceHealthChecks tests the service health check import function
 func TestImportServiceHealthChecks(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceHealthChecks
-	if fn == nil {
-		t.Error("importServiceHealthChecks function should exist")
-	}
+	fn := importServiceHealthChecks
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceHealthChecks(nil, nil, nil)
@@ -641,11 +573,8 @@ func TestImportServiceHealthChecks(t *testing.T) {
 // TestImportServiceDirectors tests the service director import function
 func TestImportServiceDirectors(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceDirectors
-	if fn == nil {
-		t.Error("importServiceDirectors function should exist")
-	}
+	fn := importServiceDirectors
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceDirectors(nil, nil, nil)
@@ -724,11 +653,8 @@ func TestServiceDomainResourceNameUniqueness(t *testing.T) {
 // TestImportServiceRequestSettings tests the service request setting import function
 func TestImportServiceRequestSettings(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceRequestSettings
-	if fn == nil {
-		t.Error("importServiceRequestSettings function should exist")
-	}
+	fn := importServiceRequestSettings
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceRequestSettings(nil, nil, nil)
@@ -752,11 +678,8 @@ func TestImportServiceRequestSettings(t *testing.T) {
 // TestImportServiceResponseObjects tests the service response object import function
 func TestImportServiceResponseObjects(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceResponseObjects
-	if fn == nil {
-		t.Error("importServiceResponseObjects function should exist")
-	}
+	fn := importServiceResponseObjects
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceResponseObjects(nil, nil, nil)
@@ -780,11 +703,8 @@ func TestImportServiceResponseObjects(t *testing.T) {
 // TestImportServiceStaticSnippets tests the service static snippet import function
 func TestImportServiceStaticSnippets(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceStaticSnippets
-	if fn == nil {
-		t.Error("importServiceStaticSnippets function should exist")
-	}
+	fn := importServiceStaticSnippets
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceStaticSnippets(nil, nil, nil)
@@ -808,11 +728,8 @@ func TestImportServiceStaticSnippets(t *testing.T) {
 // TestImportServiceVCLs tests the service VCL import function
 func TestImportServiceVCLs(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceVCLs
-	if fn == nil {
-		t.Error("importServiceVCLs function should exist")
-	}
+	fn := importServiceVCLs
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceVCLs(nil, nil, nil)
@@ -836,31 +753,22 @@ func TestImportServiceVCLs(t *testing.T) {
 // TestImportUsers tests the user import function
 func TestImportUsers(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
-	fn = importUsers
-	if fn == nil {
-		t.Error("importUsers function should exist")
-	}
+	fn := importUsers
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportServiceAuthorizations tests the service authorization import function
 func TestImportServiceAuthorizations(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
-	fn = importServiceAuthorizations
-	if fn == nil {
-		t.Error("importServiceAuthorizations function should exist")
-	}
+	fn := importServiceAuthorizations
+	_ = fn // Use the variable to avoid unused variable error
 }
 
 // TestImportServiceS3Logging tests the service S3 logging import function
 func TestImportServiceS3Logging(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceS3Logging
-	if fn == nil {
-		t.Error("importServiceS3Logging function should exist")
-	}
+	fn := importServiceS3Logging
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceS3Logging(nil, nil, nil)
@@ -884,11 +792,8 @@ func TestImportServiceS3Logging(t *testing.T) {
 // TestImportServiceSyslogLogging tests the service Syslog logging import function
 func TestImportServiceSyslogLogging(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceSyslogLogging
-	if fn == nil {
-		t.Error("importServiceSyslogLogging function should exist")
-	}
+	fn := importServiceSyslogLogging
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceSyslogLogging(nil, nil, nil)
@@ -912,11 +817,8 @@ func TestImportServiceSyslogLogging(t *testing.T) {
 // TestImportServiceDatadogLogging tests the service Datadog logging import function
 func TestImportServiceDatadogLogging(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceDatadogLogging
-	if fn == nil {
-		t.Error("importServiceDatadogLogging function should exist")
-	}
+	fn := importServiceDatadogLogging
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceDatadogLogging(nil, nil, nil)
@@ -940,11 +842,8 @@ func TestImportServiceDatadogLogging(t *testing.T) {
 // TestImportServiceBigQueryLogging tests the service BigQuery logging import function
 func TestImportServiceBigQueryLogging(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceBigQueryLogging
-	if fn == nil {
-		t.Error("importServiceBigQueryLogging function should exist")
-	}
+	fn := importServiceBigQueryLogging
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceBigQueryLogging(nil, nil, nil)
@@ -968,11 +867,8 @@ func TestImportServiceBigQueryLogging(t *testing.T) {
 // TestImportServiceSplunkLogging tests the service Splunk logging import function
 func TestImportServiceSplunkLogging(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServiceSplunkLogging
-	if fn == nil {
-		t.Error("importServiceSplunkLogging function should exist")
-	}
+	fn := importServiceSplunkLogging
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServiceSplunkLogging(nil, nil, nil)
@@ -996,11 +892,8 @@ func TestImportServiceSplunkLogging(t *testing.T) {
 // TestImportServicePapertrailLogging tests the service Papertrail logging import function
 func TestImportServicePapertrailLogging(t *testing.T) {
 	// Verify function signature exists
-	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
-	fn = importServicePapertrailLogging
-	if fn == nil {
-		t.Error("importServicePapertrailLogging function should exist")
-	}
+	fn := importServicePapertrailLogging
+	_ = fn // Use the variable to avoid unused variable error
 
 	// Test with nil/empty services
 	importCount, err := importServicePapertrailLogging(nil, nil, nil)

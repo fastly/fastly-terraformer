@@ -1363,7 +1363,7 @@ func importServiceDirectors(client *fastly.Client, rootBody *hclwrite.Body, serv
 func importServiceRequestSettings(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
 
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		fmt.Println("No services available for request setting imports.")
 		return 0, nil
 	}
@@ -1461,7 +1461,7 @@ func importServiceRequestSettings(client *fastly.Client, rootBody *hclwrite.Body
 func importServiceResponseObjects(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
 
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		fmt.Println("No services available for response object imports.")
 		return 0, nil
 	}
@@ -1559,7 +1559,7 @@ func importServiceResponseObjects(client *fastly.Client, rootBody *hclwrite.Body
 func importServiceStaticSnippets(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
 
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		fmt.Println("No services available for static snippet imports.")
 		return 0, nil
 	}
@@ -1679,7 +1679,7 @@ func importServiceStaticSnippets(client *fastly.Client, rootBody *hclwrite.Body,
 func importServiceVCLs(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
 
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		fmt.Println("No services available for VCL imports.")
 		return 0, nil
 	}
@@ -1900,7 +1900,7 @@ func importServiceAuthorizations(client *fastly.Client, rootBody *hclwrite.Body)
 func importServiceS3Logging(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
 
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		fmt.Println("No services available for S3 logging imports.")
 		return 0, nil
 	}
@@ -1998,7 +1998,7 @@ func importServiceS3Logging(client *fastly.Client, rootBody *hclwrite.Body, serv
 func importServiceSyslogLogging(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
 
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		fmt.Println("No services available for Syslog logging imports.")
 		return 0, nil
 	}
@@ -2096,7 +2096,7 @@ func importServiceSyslogLogging(client *fastly.Client, rootBody *hclwrite.Body, 
 func importServiceDatadogLogging(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
 
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		fmt.Println("No services available for Datadog logging imports.")
 		return 0, nil
 	}
@@ -2194,7 +2194,7 @@ func importServiceDatadogLogging(client *fastly.Client, rootBody *hclwrite.Body,
 func importServiceBigQueryLogging(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
 
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		fmt.Println("No services available for BigQuery logging imports.")
 		return 0, nil
 	}
@@ -2292,7 +2292,7 @@ func importServiceBigQueryLogging(client *fastly.Client, rootBody *hclwrite.Body
 func importServiceSplunkLogging(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
 
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		fmt.Println("No services available for Splunk logging imports.")
 		return 0, nil
 	}
@@ -2390,7 +2390,7 @@ func importServiceSplunkLogging(client *fastly.Client, rootBody *hclwrite.Body, 
 func importServicePapertrailLogging(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
 
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		fmt.Println("No services available for Papertrail logging imports.")
 		return 0, nil
 	}
