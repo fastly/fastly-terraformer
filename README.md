@@ -28,6 +28,9 @@
 - ✅ **`fastly_service_logging_s3`** - S3 logging endpoints
 - ✅ **`fastly_service_logging_syslog`** - Syslog logging endpoints  
 - ✅ **`fastly_service_logging_datadog`** - Datadog logging endpoints
+- ✅ **`fastly_service_logging_bigquery`** - BigQuery logging endpoints
+- ✅ **`fastly_service_logging_splunk`** - Splunk logging endpoints
+- ✅ **`fastly_service_logging_papertrail`** - Papertrail logging endpoints
 
 ### Fastly Store Resources
 - ✅ **`fastly_configstore`** - Config store resources
@@ -37,6 +40,9 @@
 ### TLS and Security  
 - ✅ **`fastly_tls_subscription`** - TLS subscriptions
 - ✅ **`fastly_tls_activation`** - TLS certificate activations
+- ✅ **`fastly_tls_certificate`** - TLS certificates
+- ✅ **`fastly_tls_configuration`** - TLS configurations  
+- ✅ **`fastly_tls_private_key`** - TLS private keys
 
 ### Account-Level Resources
 - ✅ **`fastly_user`** - User management
@@ -73,13 +79,9 @@
 The following Fastly provider resources are **not currently imported** by this tool:
 
 ### Core Fastly Resources
-- ❌ **`fastly_service_logging_*`** - Other logging endpoints (BigQuery, Splunk, Papertrail, etc.)
 - ❌ **`fastly_service_waf_configuration`** - Legacy WAF configurations
 
-### TLS and Security
-- ❌ **`fastly_tls_certificate`** - TLS certificates
-- ❌ **`fastly_tls_configuration`** - TLS configurations  
-- ❌ **`fastly_tls_private_key`** - TLS private keys
+> **Note**: Legacy WAF configurations are not accessible through the current Fastly API. If you need WAF functionality, consider using the modern NGWAF resources which are fully supported by this tool.
 
 ## Prerequisites
 

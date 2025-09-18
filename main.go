@@ -1010,6 +1010,141 @@ func importTLSActivations(client *fastly.Client, rootBody *hclwrite.Body) (int, 
 	return importCount, nil
 }
 
+// importTLSCertificates handles importing Fastly TLS certificate resources
+func importTLSCertificates(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly TLS certificates...")
+	
+	tlsCertificates, err := client.ListCustomTLSCertificates(context.Background(), &fastly.ListCustomTLSCertificatesInput{})
+	if err != nil {
+		log.Printf("Error listing TLS certificates: %v. Skipping TLS certificate imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if len(tlsCertificates) == 0 {
+		fmt.Println("No TLS certificates found for this account.")
+	} else {
+		fmt.Printf("Found %d TLS certificate(s). Adding to import.tf...\n", len(tlsCertificates))
+
+		for _, certificate := range tlsCertificates {
+			if certificate.ID == "" {
+				log.Printf("Skipping TLS certificate with empty ID\n")
+				continue
+			}
+
+			// Sanitize the certificate ID for the Terraform resource name
+			tfCertificateResourceName := sanitizeForTerraformResourceName(certificate.ID, "tls_certificate")
+
+			// Create the import block for the TLS certificate
+			certificateImportBlock := rootBody.AppendNewBlock("import", nil)
+			certificateImportBody := certificateImportBlock.Body()
+			certificateImportBody.SetAttributeValue("id", cty.StringVal(certificate.ID))
+
+			// Set the Terraform resource type and name
+			certificateImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_tls_certificate"},
+				hcl.TraverseAttr{Name: tfCertificateResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("  Added import for TLS certificate: %s as fastly_tls_certificate.%s\n", certificate.ID, tfCertificateResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importTLSConfigurations handles importing Fastly TLS configuration resources
+func importTLSConfigurations(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly TLS configurations...")
+	
+	tlsConfigurations, err := client.ListCustomTLSConfigurations(context.Background(), &fastly.ListCustomTLSConfigurationsInput{})
+	if err != nil {
+		log.Printf("Error listing TLS configurations: %v. Skipping TLS configuration imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if len(tlsConfigurations) == 0 {
+		fmt.Println("No TLS configurations found for this account.")
+	} else {
+		fmt.Printf("Found %d TLS configuration(s). Adding to import.tf...\n", len(tlsConfigurations))
+
+		for _, configuration := range tlsConfigurations {
+			if configuration.ID == "" {
+				log.Printf("Skipping TLS configuration with empty ID\n")
+				continue
+			}
+
+			// Sanitize the configuration ID for the Terraform resource name
+			tfConfigurationResourceName := sanitizeForTerraformResourceName(configuration.ID, "tls_configuration")
+
+			// Create the import block for the TLS configuration
+			configurationImportBlock := rootBody.AppendNewBlock("import", nil)
+			configurationImportBody := configurationImportBlock.Body()
+			configurationImportBody.SetAttributeValue("id", cty.StringVal(configuration.ID))
+
+			// Set the Terraform resource type and name
+			configurationImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_tls_configuration"},
+				hcl.TraverseAttr{Name: tfConfigurationResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("  Added import for TLS configuration: %s as fastly_tls_configuration.%s\n", configuration.ID, tfConfigurationResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// importTLSPrivateKeys handles importing Fastly TLS private key resources
+func importTLSPrivateKeys(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly TLS private keys...")
+	
+	tlsPrivateKeys, err := client.ListPrivateKeys(context.Background(), &fastly.ListPrivateKeysInput{})
+	if err != nil {
+		log.Printf("Error listing TLS private keys: %v. Skipping TLS private key imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if len(tlsPrivateKeys) == 0 {
+		fmt.Println("No TLS private keys found for this account.")
+	} else {
+		fmt.Printf("Found %d TLS private key(s). Adding to import.tf...\n", len(tlsPrivateKeys))
+
+		for _, privateKey := range tlsPrivateKeys {
+			if privateKey.ID == "" {
+				log.Printf("Skipping TLS private key with empty ID\n")
+				continue
+			}
+
+			// Sanitize the private key ID for the Terraform resource name
+			tfPrivateKeyResourceName := sanitizeForTerraformResourceName(privateKey.ID, "tls_private_key")
+
+			// Create the import block for the TLS private key
+			privateKeyImportBlock := rootBody.AppendNewBlock("import", nil)
+			privateKeyImportBody := privateKeyImportBlock.Body()
+			privateKeyImportBody.SetAttributeValue("id", cty.StringVal(privateKey.ID))
+
+			// Set the Terraform resource type and name
+			privateKeyImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_tls_private_key"},
+				hcl.TraverseAttr{Name: tfPrivateKeyResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("  Added import for TLS private key: %s as fastly_tls_private_key.%s\n", privateKey.ID, tfPrivateKeyResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
 // importServiceHealthChecks handles importing Fastly service health check resources for all services
 func importServiceHealthChecks(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
@@ -2054,6 +2189,300 @@ func importServiceDatadogLogging(client *fastly.Client, rootBody *hclwrite.Body,
 	return importCount, nil
 }
 
+// importServiceBigQueryLogging handles importing Fastly service BigQuery logging resources
+func importServiceBigQueryLogging(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+
+	if services == nil || len(services) == 0 {
+		fmt.Println("No services available for BigQuery logging imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service BigQuery logging endpoints...")
+
+	for _, service := range services {
+		var serviceIDValue string
+		if service.ServiceID != nil {
+			serviceIDValue = *service.ServiceID
+		}
+
+		var serviceName string
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		if serviceIDValue == "" {
+			log.Printf("Skipping service with empty ID (Name: %s) for BigQuery logging imports\n", serviceName)
+			continue
+		}
+
+		// Get the active version for this service
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceIDValue})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping BigQuery logging.", serviceIDValue, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping BigQuery logging.", serviceIDValue)
+			continue
+		}
+
+		fmt.Printf("  Fetching BigQuery logging endpoints for service: %s (ID: %s, version: %d)\n", serviceName, serviceIDValue, activeVersionNumber)
+
+		bigQueryLogs, err := client.ListBigQueries(context.Background(), &fastly.ListBigQueriesInput{
+			ServiceID:      serviceIDValue,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("    Error listing BigQuery logging endpoints for service ID %s, version %d: %v", serviceIDValue, activeVersionNumber, err)
+			continue
+		}
+
+		if len(bigQueryLogs) == 0 {
+			fmt.Printf("    No BigQuery logging endpoints found for service %s\n", serviceName)
+		} else {
+			fmt.Printf("    Found %d BigQuery logging endpoint(s) for service %s\n", len(bigQueryLogs), serviceName)
+
+			for _, bigQueryLog := range bigQueryLogs {
+				if bigQueryLog.Name == nil || *bigQueryLog.Name == "" {
+					log.Printf("      Skipping BigQuery logging endpoint with empty name for service ID %s", serviceIDValue)
+					continue
+				}
+
+				bigQueryLogName := *bigQueryLog.Name
+				importID := fmt.Sprintf("%s/%s", serviceIDValue, bigQueryLogName)
+
+				// Generate resource name
+				tfBigQueryLogResourceName := sanitizeForTerraformResourceName(bigQueryLogName, "bigquery_logging")
+				
+				// Ensure uniqueness by adding service ID
+				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
+				tfBigQueryLogResourceName = fmt.Sprintf("%s_%s", tfBigQueryLogResourceName, sanitizedServiceID)
+
+				bigQueryLogImportBlock := rootBody.AppendNewBlock("import", nil)
+				bigQueryLogImportBody := bigQueryLogImportBlock.Body()
+				bigQueryLogImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+				bigQueryLogImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_service_logging_bigquery"},
+					hcl.TraverseAttr{Name: tfBigQueryLogResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("      Added import for BigQuery logging: %s (Import ID: %s) as fastly_service_logging_bigquery.%s\n", bigQueryLogName, importID, tfBigQueryLogResourceName)
+			}
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServiceSplunkLogging handles importing Fastly service Splunk logging resources
+func importServiceSplunkLogging(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+
+	if services == nil || len(services) == 0 {
+		fmt.Println("No services available for Splunk logging imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service Splunk logging endpoints...")
+
+	for _, service := range services {
+		var serviceIDValue string
+		if service.ServiceID != nil {
+			serviceIDValue = *service.ServiceID
+		}
+
+		var serviceName string
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		if serviceIDValue == "" {
+			log.Printf("Skipping service with empty ID (Name: %s) for Splunk logging imports\n", serviceName)
+			continue
+		}
+
+		// Get the active version for this service
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceIDValue})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping Splunk logging.", serviceIDValue, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping Splunk logging.", serviceIDValue)
+			continue
+		}
+
+		fmt.Printf("  Fetching Splunk logging endpoints for service: %s (ID: %s, version: %d)\n", serviceName, serviceIDValue, activeVersionNumber)
+
+		splunkLogs, err := client.ListSplunks(context.Background(), &fastly.ListSplunksInput{
+			ServiceID:      serviceIDValue,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("    Error listing Splunk logging endpoints for service ID %s, version %d: %v", serviceIDValue, activeVersionNumber, err)
+			continue
+		}
+
+		if len(splunkLogs) == 0 {
+			fmt.Printf("    No Splunk logging endpoints found for service %s\n", serviceName)
+		} else {
+			fmt.Printf("    Found %d Splunk logging endpoint(s) for service %s\n", len(splunkLogs), serviceName)
+
+			for _, splunkLog := range splunkLogs {
+				if splunkLog.Name == nil || *splunkLog.Name == "" {
+					log.Printf("      Skipping Splunk logging endpoint with empty name for service ID %s", serviceIDValue)
+					continue
+				}
+
+				splunkLogName := *splunkLog.Name
+				importID := fmt.Sprintf("%s/%s", serviceIDValue, splunkLogName)
+
+				// Generate resource name
+				tfSplunkLogResourceName := sanitizeForTerraformResourceName(splunkLogName, "splunk_logging")
+				
+				// Ensure uniqueness by adding service ID
+				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
+				tfSplunkLogResourceName = fmt.Sprintf("%s_%s", tfSplunkLogResourceName, sanitizedServiceID)
+
+				splunkLogImportBlock := rootBody.AppendNewBlock("import", nil)
+				splunkLogImportBody := splunkLogImportBlock.Body()
+				splunkLogImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+				splunkLogImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_service_logging_splunk"},
+					hcl.TraverseAttr{Name: tfSplunkLogResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("      Added import for Splunk logging: %s (Import ID: %s) as fastly_service_logging_splunk.%s\n", splunkLogName, importID, tfSplunkLogResourceName)
+			}
+		}
+	}
+
+	return importCount, nil
+}
+
+// importServicePapertrailLogging handles importing Fastly service Papertrail logging resources
+func importServicePapertrailLogging(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
+	importCount := 0
+
+	if services == nil || len(services) == 0 {
+		fmt.Println("No services available for Papertrail logging imports.")
+		return 0, nil
+	}
+
+	fmt.Println("\nFetching Fastly service Papertrail logging endpoints...")
+
+	for _, service := range services {
+		var serviceIDValue string
+		if service.ServiceID != nil {
+			serviceIDValue = *service.ServiceID
+		}
+
+		var serviceName string
+		if service.Name != nil {
+			serviceName = *service.Name
+		}
+
+		if serviceIDValue == "" {
+			log.Printf("Skipping service with empty ID (Name: %s) for Papertrail logging imports\n", serviceName)
+			continue
+		}
+
+		// Get the active version for this service
+		serviceDetails, err := client.GetService(context.Background(), &fastly.GetServiceInput{ServiceID: serviceIDValue})
+		if err != nil {
+			log.Printf("Error fetching service details for service ID %s: %v. Skipping Papertrail logging.", serviceIDValue, err)
+			continue
+		}
+
+		var activeVersionNumber int
+		foundActiveVersion := false
+
+		if serviceDetails.ActiveVersion != nil {
+			activeVersionNumber = *serviceDetails.ActiveVersion
+			foundActiveVersion = true
+		}
+
+		if !foundActiveVersion {
+			log.Printf("  No active version found for service ID %s. Skipping Papertrail logging.", serviceIDValue)
+			continue
+		}
+
+		fmt.Printf("  Fetching Papertrail logging endpoints for service: %s (ID: %s, version: %d)\n", serviceName, serviceIDValue, activeVersionNumber)
+
+		papertrailLogs, err := client.ListPapertrails(context.Background(), &fastly.ListPapertrailsInput{
+			ServiceID:      serviceIDValue,
+			ServiceVersion: activeVersionNumber,
+		})
+		if err != nil {
+			log.Printf("    Error listing Papertrail logging endpoints for service ID %s, version %d: %v", serviceIDValue, activeVersionNumber, err)
+			continue
+		}
+
+		if len(papertrailLogs) == 0 {
+			fmt.Printf("    No Papertrail logging endpoints found for service %s\n", serviceName)
+		} else {
+			fmt.Printf("    Found %d Papertrail logging endpoint(s) for service %s\n", len(papertrailLogs), serviceName)
+
+			for _, papertrailLog := range papertrailLogs {
+				if papertrailLog.Name == nil || *papertrailLog.Name == "" {
+					log.Printf("      Skipping Papertrail logging endpoint with empty name for service ID %s", serviceIDValue)
+					continue
+				}
+
+				papertrailLogName := *papertrailLog.Name
+				importID := fmt.Sprintf("%s/%s", serviceIDValue, papertrailLogName)
+
+				// Generate resource name
+				tfPapertrailLogResourceName := sanitizeForTerraformResourceName(papertrailLogName, "papertrail_logging")
+				
+				// Ensure uniqueness by adding service ID
+				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
+				tfPapertrailLogResourceName = fmt.Sprintf("%s_%s", tfPapertrailLogResourceName, sanitizedServiceID)
+
+				papertrailLogImportBlock := rootBody.AppendNewBlock("import", nil)
+				papertrailLogImportBody := papertrailLogImportBlock.Body()
+				papertrailLogImportBody.SetAttributeValue("id", cty.StringVal(importID))
+
+				papertrailLogImportBody.SetAttributeTraversal("to", hcl.Traversal{
+					hcl.TraverseRoot{Name: "fastly_service_logging_papertrail"},
+					hcl.TraverseAttr{Name: tfPapertrailLogResourceName},
+				})
+				rootBody.AppendNewline()
+				importCount++
+
+				fmt.Printf("      Added import for Papertrail logging: %s (Import ID: %s) as fastly_service_logging_papertrail.%s\n", papertrailLogName, importID, tfPapertrailLogResourceName)
+			}
+		}
+	}
+
+	return importCount, nil
+}
+
 // importNGWAFWorkspaceLists handles importing NGWAF workspace-scoped list resources
 func importNGWAFWorkspaceLists(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
 	importCount := 0
@@ -3024,6 +3453,24 @@ func main() {
 			importCount += serviceDatadogImportCount
 		}
 
+		// Import BigQuery logging endpoints for all services
+		serviceBigQueryImportCount, err := importServiceBigQueryLogging(client, rootBody, services)
+		if err == nil {
+			importCount += serviceBigQueryImportCount
+		}
+
+		// Import Splunk logging endpoints for all services
+		serviceSplunkImportCount, err := importServiceSplunkLogging(client, rootBody, services)
+		if err == nil {
+			importCount += serviceSplunkImportCount
+		}
+
+		// Import Papertrail logging endpoints for all services
+		servicePapertrailImportCount, err := importServicePapertrailLogging(client, rootBody, services)
+		if err == nil {
+			importCount += servicePapertrailImportCount
+		}
+
 		// --- 4. Process Store Resources ---
 		configStoreImportCount, err := importConfigStores(client, rootBody)
 		if err == nil {
@@ -3049,6 +3496,21 @@ func main() {
 		tlsActivationImportCount, err := importTLSActivations(client, rootBody)
 		if err == nil {
 			importCount += tlsActivationImportCount
+		}
+
+		tlsCertificateImportCount, err := importTLSCertificates(client, rootBody)
+		if err == nil {
+			importCount += tlsCertificateImportCount
+		}
+
+		tlsConfigurationImportCount, err := importTLSConfigurations(client, rootBody)
+		if err == nil {
+			importCount += tlsConfigurationImportCount
+		}
+
+		tlsPrivateKeyImportCount, err := importTLSPrivateKeys(client, rootBody)
+		if err == nil {
+			importCount += tlsPrivateKeyImportCount
 		}
 
 		// --- 6. Process User and Authorization Resources ---

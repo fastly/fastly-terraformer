@@ -589,6 +589,36 @@ func TestImportTLSActivations(t *testing.T) {
 	}
 }
 
+// TestImportTLSCertificates tests the TLS certificate import function
+func TestImportTLSCertificates(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
+	fn = importTLSCertificates
+	if fn == nil {
+		t.Error("importTLSCertificates function should exist")
+	}
+}
+
+// TestImportTLSConfigurations tests the TLS configuration import function
+func TestImportTLSConfigurations(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
+	fn = importTLSConfigurations
+	if fn == nil {
+		t.Error("importTLSConfigurations function should exist")
+	}
+}
+
+// TestImportTLSPrivateKeys tests the TLS private key import function
+func TestImportTLSPrivateKeys(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body) (int, error)
+	fn = importTLSPrivateKeys
+	if fn == nil {
+		t.Error("importTLSPrivateKeys function should exist")
+	}
+}
+
 // TestImportServiceHealthChecks tests the service health check import function
 func TestImportServiceHealthChecks(t *testing.T) {
 	// Verify function signature exists
@@ -899,6 +929,90 @@ func TestImportServiceDatadogLogging(t *testing.T) {
 
 	// Test with empty services slice
 	importCount, err = importServiceDatadogLogging(nil, nil, []*fastly.Service{})
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is empty")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is empty, got %v", err)
+	}
+}
+
+// TestImportServiceBigQueryLogging tests the service BigQuery logging import function
+func TestImportServiceBigQueryLogging(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
+	fn = importServiceBigQueryLogging
+	if fn == nil {
+		t.Error("importServiceBigQueryLogging function should exist")
+	}
+
+	// Test with nil/empty services
+	importCount, err := importServiceBigQueryLogging(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+
+	// Test with empty services slice
+	importCount, err = importServiceBigQueryLogging(nil, nil, []*fastly.Service{})
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is empty")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is empty, got %v", err)
+	}
+}
+
+// TestImportServiceSplunkLogging tests the service Splunk logging import function
+func TestImportServiceSplunkLogging(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
+	fn = importServiceSplunkLogging
+	if fn == nil {
+		t.Error("importServiceSplunkLogging function should exist")
+	}
+
+	// Test with nil/empty services
+	importCount, err := importServiceSplunkLogging(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+
+	// Test with empty services slice
+	importCount, err = importServiceSplunkLogging(nil, nil, []*fastly.Service{})
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is empty")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is empty, got %v", err)
+	}
+}
+
+// TestImportServicePapertrailLogging tests the service Papertrail logging import function
+func TestImportServicePapertrailLogging(t *testing.T) {
+	// Verify function signature exists
+	var fn func(*fastly.Client, *hclwrite.Body, []*fastly.Service) (int, error)
+	fn = importServicePapertrailLogging
+	if fn == nil {
+		t.Error("importServicePapertrailLogging function should exist")
+	}
+
+	// Test with nil/empty services
+	importCount, err := importServicePapertrailLogging(nil, nil, nil)
+	if importCount != 0 {
+		t.Error("Expected 0 import count when services is nil")
+	}
+	if err != nil {
+		t.Errorf("Expected no error when services is nil, got %v", err)
+	}
+
+	// Test with empty services slice
+	importCount, err = importServicePapertrailLogging(nil, nil, []*fastly.Service{})
 	if importCount != 0 {
 		t.Error("Expected 0 import count when services is empty")
 	}
