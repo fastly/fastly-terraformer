@@ -36,7 +36,6 @@ override.tf.json
 .terraformrc
 terraform.rc
 .terraform.lock.hcl
-go.sum
 /go
 go.tar.gz
 GEMINI.md
