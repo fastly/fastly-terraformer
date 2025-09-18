@@ -36,7 +36,6 @@ override.tf.json
 .terraformrc
 terraform.rc
 .terraform.lock.hcl
-go.sum
 /go
 go.tar.gz
 GEMINI.md
@@ -46,3 +45,7 @@ import.tf
 generated.tf
 mod
 fastly-terraformer
+
+# Coverage files
+coverage.out
+coverage.html
