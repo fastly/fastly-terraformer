@@ -32,8 +32,9 @@ import (
 	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/thresholds"
 	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/virtualpatches"
 
-	"github.com/hashicorp/hcl/v2"
+	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
+
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -321,7 +322,7 @@ func importNGWAFAccountSignals(client *fastly.Client, rootBody *hclwrite.Body) (
 // importConfigStores handles importing Fastly Config Store resources
 func importConfigStores(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
 	fmt.Println("\nFetching Fastly Config Stores...")
-	
+
 	configStores, err := client.ListConfigStores(context.Background(), &fastly.ListConfigStoresInput{})
 	if err != nil {
 		log.Printf("Error listing Config Stores: %v. Skipping Config Store imports.", err)
@@ -371,7 +372,7 @@ func importConfigStores(client *fastly.Client, rootBody *hclwrite.Body) (int, er
 // importKVStores handles importing Fastly KV Store resources
 func importKVStores(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
 	fmt.Println("\nFetching Fastly KV Stores...")
-	
+
 	kvStoresResponse, err := client.ListKVStores(context.Background(), &fastly.ListKVStoresInput{})
 	if err != nil {
 		log.Printf("Error listing KV Stores: %v. Skipping KV Store imports.", err)
@@ -421,7 +422,7 @@ func importKVStores(client *fastly.Client, rootBody *hclwrite.Body) (int, error)
 // importSecretStores handles importing Fastly Secret Store resources
 func importSecretStores(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
 	fmt.Println("\nFetching Fastly Secret Stores...")
-	
+
 	secretStoresResponse, err := client.ListSecretStores(context.Background(), &fastly.ListSecretStoresInput{})
 	if err != nil {
 		log.Printf("Error listing Secret Stores: %v. Skipping Secret Store imports.", err)
@@ -471,7 +472,7 @@ func importSecretStores(client *fastly.Client, rootBody *hclwrite.Body) (int, er
 // importServiceDomains handles importing Fastly service domain resources for all services
 func importServiceDomains(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
-	
+
 	if len(services) == 0 {
 		fmt.Println("No services available for domain imports.")
 		return 0, nil
@@ -548,10 +549,10 @@ func importServiceDomains(client *fastly.Client, rootBody *hclwrite.Body, servic
 			importID := fmt.Sprintf("%s/%s", serviceID, *domain.Name)
 
 			// Generate resource name using service and domain information
-			// Handle wildcard domains to avoid duplicate resource names when domains like 
+			// Handle wildcard domains to avoid duplicate resource names when domains like
 			// "*.livewaflove.com" and "livewaflove.com" would sanitize to the same value
 			sanitizedServiceID := sanitizeForTerraformResourceName(serviceID, "svc")
-			
+
 			// Check if this is a wildcard domain and create appropriate identifier
 			domainIdentifier := *domain.Name
 			isWildcard := strings.HasPrefix(*domain.Name, "*.")
@@ -561,10 +562,10 @@ func importServiceDomains(client *fastly.Client, rootBody *hclwrite.Body, servic
 				domainWithoutWildcard := strings.TrimPrefix(*domain.Name, "*.")
 				domainIdentifier = "wildcard_" + domainWithoutWildcard
 			}
-			
+
 			// Sanitize the domain identifier
 			sanitizedDomainIdentifier := sanitizeForTerraformResourceName(domainIdentifier, "domain")
-			
+
 			// Create the final resource name
 			tfDomainResourceName := fmt.Sprintf("service_%s_domain_%s", sanitizedServiceID, sanitizedDomainIdentifier)
 
@@ -589,7 +590,7 @@ func importServiceDomains(client *fastly.Client, rootBody *hclwrite.Body, servic
 // importServiceACLs handles importing Fastly service ACL resources for all services
 func importServiceACLs(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
-	
+
 	if len(services) == 0 {
 		fmt.Println("No services available for ACL imports.")
 		return 0, nil
@@ -705,7 +706,7 @@ func importServiceACLs(client *fastly.Client, rootBody *hclwrite.Body, services 
 // importServiceDictionaries handles importing Fastly service dictionary resources for all services
 func importServiceDictionaries(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
-	
+
 	if len(services) == 0 {
 		fmt.Println("No services available for dictionary imports.")
 		return 0, nil
@@ -821,7 +822,7 @@ func importServiceDictionaries(client *fastly.Client, rootBody *hclwrite.Body, s
 // importServiceBackends handles importing Fastly service backend resources for all services
 func importServiceBackends(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
-	
+
 	if len(services) == 0 {
 		fmt.Println("No services available for backend imports.")
 		return 0, nil
@@ -923,7 +924,7 @@ func importServiceBackends(client *fastly.Client, rootBody *hclwrite.Body, servi
 // importTLSSubscriptions handles importing Fastly TLS subscription resources
 func importTLSSubscriptions(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
 	fmt.Println("\nFetching Fastly TLS subscriptions...")
-	
+
 	tlsSubscriptions, err := client.ListTLSSubscriptions(context.Background(), &fastly.ListTLSSubscriptionsInput{})
 	if err != nil {
 		log.Printf("Error listing TLS subscriptions: %v. Skipping TLS subscription imports.", err)
@@ -968,7 +969,7 @@ func importTLSSubscriptions(client *fastly.Client, rootBody *hclwrite.Body) (int
 // importTLSActivations handles importing Fastly TLS activation resources
 func importTLSActivations(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
 	fmt.Println("\nFetching Fastly TLS activations...")
-	
+
 	tlsActivations, err := client.ListTLSActivations(context.Background(), &fastly.ListTLSActivationsInput{})
 	if err != nil {
 		log.Printf("Error listing TLS activations: %v. Skipping TLS activation imports.", err)
@@ -1013,7 +1014,7 @@ func importTLSActivations(client *fastly.Client, rootBody *hclwrite.Body) (int, 
 // importTLSCertificates handles importing Fastly TLS certificate resources
 func importTLSCertificates(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
 	fmt.Println("\nFetching Fastly TLS certificates...")
-	
+
 	tlsCertificates, err := client.ListCustomTLSCertificates(context.Background(), &fastly.ListCustomTLSCertificatesInput{})
 	if err != nil {
 		log.Printf("Error listing TLS certificates: %v. Skipping TLS certificate imports.", err)
@@ -1058,7 +1059,7 @@ func importTLSCertificates(client *fastly.Client, rootBody *hclwrite.Body) (int,
 // importTLSConfigurations handles importing Fastly TLS configuration resources
 func importTLSConfigurations(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
 	fmt.Println("\nFetching Fastly TLS configurations...")
-	
+
 	tlsConfigurations, err := client.ListCustomTLSConfigurations(context.Background(), &fastly.ListCustomTLSConfigurationsInput{})
 	if err != nil {
 		log.Printf("Error listing TLS configurations: %v. Skipping TLS configuration imports.", err)
@@ -1103,7 +1104,7 @@ func importTLSConfigurations(client *fastly.Client, rootBody *hclwrite.Body) (in
 // importTLSPrivateKeys handles importing Fastly TLS private key resources
 func importTLSPrivateKeys(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
 	fmt.Println("\nFetching Fastly TLS private keys...")
-	
+
 	tlsPrivateKeys, err := client.ListPrivateKeys(context.Background(), &fastly.ListPrivateKeysInput{})
 	if err != nil {
 		log.Printf("Error listing TLS private keys: %v. Skipping TLS private key imports.", err)
@@ -1148,7 +1149,7 @@ func importTLSPrivateKeys(client *fastly.Client, rootBody *hclwrite.Body) (int, 
 // importServiceHealthChecks handles importing Fastly service health check resources for all services
 func importServiceHealthChecks(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
-	
+
 	if len(services) == 0 {
 		fmt.Println("No services available for health check imports.")
 		return 0, nil
@@ -1250,7 +1251,7 @@ func importServiceHealthChecks(client *fastly.Client, rootBody *hclwrite.Body, s
 // importServiceDirectors handles importing Fastly service director resources for all services
 func importServiceDirectors(client *fastly.Client, rootBody *hclwrite.Body, services []*fastly.Service) (int, error) {
 	importCount := 0
-	
+
 	if len(services) == 0 {
 		fmt.Println("No services available for director imports.")
 		return 0, nil
@@ -1432,7 +1433,7 @@ func importServiceRequestSettings(client *fastly.Client, rootBody *hclwrite.Body
 
 				// Generate resource name
 				tfRequestSettingResourceName := sanitizeForTerraformResourceName(requestSettingName, "request_setting")
-				
+
 				// Ensure uniqueness by adding service ID
 				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
 				tfRequestSettingResourceName = fmt.Sprintf("%s_%s", tfRequestSettingResourceName, sanitizedServiceID)
@@ -1530,7 +1531,7 @@ func importServiceResponseObjects(client *fastly.Client, rootBody *hclwrite.Body
 
 				// Generate resource name
 				tfResponseObjectResourceName := sanitizeForTerraformResourceName(responseObjectName, "response_object")
-				
+
 				// Ensure uniqueness by adding service ID
 				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
 				tfResponseObjectResourceName = fmt.Sprintf("%s_%s", tfResponseObjectResourceName, sanitizedServiceID)
@@ -1633,7 +1634,7 @@ func importServiceStaticSnippets(client *fastly.Client, rootBody *hclwrite.Body,
 
 			if isStatic {
 				staticSnippetCount++
-				
+
 				if snippet.Name == nil || *snippet.Name == "" {
 					log.Printf("      Skipping static snippet with empty name for service ID %s", serviceIDValue)
 					continue
@@ -1644,7 +1645,7 @@ func importServiceStaticSnippets(client *fastly.Client, rootBody *hclwrite.Body,
 
 				// Generate resource name
 				tfSnippetResourceName := sanitizeForTerraformResourceName(snippetName, "snippet")
-				
+
 				// Ensure uniqueness by adding service ID
 				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
 				tfSnippetResourceName = fmt.Sprintf("%s_%s", tfSnippetResourceName, sanitizedServiceID)
@@ -1759,7 +1760,7 @@ func importServiceVCLs(client *fastly.Client, rootBody *hclwrite.Body, services 
 
 				// Generate resource name
 				tfVCLResourceName := sanitizeForTerraformResourceName(vclName, "vcl")
-				
+
 				// Ensure uniqueness by adding service ID
 				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
 				tfVCLResourceName = fmt.Sprintf("%s_%s", tfVCLResourceName, sanitizedServiceID)
@@ -1969,7 +1970,7 @@ func importServiceS3Logging(client *fastly.Client, rootBody *hclwrite.Body, serv
 
 				// Generate resource name
 				tfS3LogResourceName := sanitizeForTerraformResourceName(s3LogName, "s3_logging")
-				
+
 				// Ensure uniqueness by adding service ID
 				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
 				tfS3LogResourceName = fmt.Sprintf("%s_%s", tfS3LogResourceName, sanitizedServiceID)
@@ -2067,7 +2068,7 @@ func importServiceSyslogLogging(client *fastly.Client, rootBody *hclwrite.Body, 
 
 				// Generate resource name
 				tfSyslogLogResourceName := sanitizeForTerraformResourceName(syslogLogName, "syslog_logging")
-				
+
 				// Ensure uniqueness by adding service ID
 				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
 				tfSyslogLogResourceName = fmt.Sprintf("%s_%s", tfSyslogLogResourceName, sanitizedServiceID)
@@ -2165,7 +2166,7 @@ func importServiceDatadogLogging(client *fastly.Client, rootBody *hclwrite.Body,
 
 				// Generate resource name
 				tfDatadogLogResourceName := sanitizeForTerraformResourceName(datadogLogName, "datadog_logging")
-				
+
 				// Ensure uniqueness by adding service ID
 				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
 				tfDatadogLogResourceName = fmt.Sprintf("%s_%s", tfDatadogLogResourceName, sanitizedServiceID)
@@ -2263,7 +2264,7 @@ func importServiceBigQueryLogging(client *fastly.Client, rootBody *hclwrite.Body
 
 				// Generate resource name
 				tfBigQueryLogResourceName := sanitizeForTerraformResourceName(bigQueryLogName, "bigquery_logging")
-				
+
 				// Ensure uniqueness by adding service ID
 				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
 				tfBigQueryLogResourceName = fmt.Sprintf("%s_%s", tfBigQueryLogResourceName, sanitizedServiceID)
@@ -2361,7 +2362,7 @@ func importServiceSplunkLogging(client *fastly.Client, rootBody *hclwrite.Body, 
 
 				// Generate resource name
 				tfSplunkLogResourceName := sanitizeForTerraformResourceName(splunkLogName, "splunk_logging")
-				
+
 				// Ensure uniqueness by adding service ID
 				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
 				tfSplunkLogResourceName = fmt.Sprintf("%s_%s", tfSplunkLogResourceName, sanitizedServiceID)
@@ -2459,7 +2460,7 @@ func importServicePapertrailLogging(client *fastly.Client, rootBody *hclwrite.Bo
 
 				// Generate resource name
 				tfPapertrailLogResourceName := sanitizeForTerraformResourceName(papertrailLogName, "papertrail_logging")
-				
+
 				// Ensure uniqueness by adding service ID
 				sanitizedServiceID := sanitizeForTerraformResourceName(serviceIDValue, "svc")
 				tfPapertrailLogResourceName = fmt.Sprintf("%s_%s", tfPapertrailLogResourceName, sanitizedServiceID)
@@ -2486,7 +2487,7 @@ func importServicePapertrailLogging(client *fastly.Client, rootBody *hclwrite.Bo
 // importNGWAFWorkspaceLists handles importing NGWAF workspace-scoped list resources
 func importNGWAFWorkspaceLists(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
 	importCount := 0
-	
+
 	if ngwafWorkspaces == nil || len(ngwafWorkspaces.Data) == 0 {
 		fmt.Println("No workspaces available for workspace-scoped list imports.")
 		return 0, nil
@@ -2500,7 +2501,7 @@ func importNGWAFWorkspaceLists(client *fastly.Client, rootBody *hclwrite.Body, n
 		}
 
 		fmt.Printf("  Fetching lists for workspace: %s (ID: %s)\n", workspace.Name, workspace.WorkspaceID)
-		
+
 		workspaceScope := &common.Scope{
 			Type:      common.ScopeTypeWorkspace,
 			AppliesTo: []string{workspace.WorkspaceID},
@@ -2556,7 +2557,7 @@ func importNGWAFWorkspaceLists(client *fastly.Client, rootBody *hclwrite.Body, n
 // importNGWAFWorkspaceRules handles importing NGWAF workspace-scoped rule resources
 func importNGWAFWorkspaceRules(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
 	importCount := 0
-	
+
 	if ngwafWorkspaces == nil || len(ngwafWorkspaces.Data) == 0 {
 		fmt.Println("No workspaces available for workspace-scoped rule imports.")
 		return 0, nil
@@ -2570,7 +2571,7 @@ func importNGWAFWorkspaceRules(client *fastly.Client, rootBody *hclwrite.Body, n
 		}
 
 		fmt.Printf("  Fetching rules for workspace: %s (ID: %s)\n", workspace.Name, workspace.WorkspaceID)
-		
+
 		workspaceScope := &common.Scope{
 			Type:      common.ScopeTypeWorkspace,
 			AppliesTo: []string{workspace.WorkspaceID},
@@ -2626,7 +2627,7 @@ func importNGWAFWorkspaceRules(client *fastly.Client, rootBody *hclwrite.Body, n
 // importNGWAFWorkspaceSignals handles importing NGWAF workspace-scoped signal resources
 func importNGWAFWorkspaceSignals(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
 	importCount := 0
-	
+
 	if ngwafWorkspaces == nil || len(ngwafWorkspaces.Data) == 0 {
 		fmt.Println("No workspaces available for workspace-scoped signal imports.")
 		return 0, nil
@@ -2640,7 +2641,7 @@ func importNGWAFWorkspaceSignals(client *fastly.Client, rootBody *hclwrite.Body,
 		}
 
 		fmt.Printf("  Fetching signals for workspace: %s (ID: %s)\n", workspace.Name, workspace.WorkspaceID)
-		
+
 		workspaceScope := &common.Scope{
 			Type:      common.ScopeTypeWorkspace,
 			AppliesTo: []string{workspace.WorkspaceID},
@@ -2696,7 +2697,7 @@ func importNGWAFWorkspaceSignals(client *fastly.Client, rootBody *hclwrite.Body,
 // importNGWAFWorkspaceScopedResources handles importing all workspace-scoped NGWAF resources (alerts, redactions, thresholds, virtual patches)
 func importNGWAFWorkspaceScopedResources(client *fastly.Client, rootBody *hclwrite.Body, ngwafWorkspaces *workspaces.Workspaces) (int, error) {
 	importCount := 0
-	
+
 	// For each workspace, fetch all alert integrations and other workspace-scoped resources
 	if ngwafWorkspaces != nil && len(ngwafWorkspaces.Data) > 0 {
 		fmt.Println("\nFetching NGWAF workspace alert integrations...")
