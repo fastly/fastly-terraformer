@@ -9,28 +9,28 @@ import (
 	"regexp"
 	"strings"
 
-	// IMPORTANT: Ensure your go.mod file correctly references github.com/fastly/go-fastly/v10
+	// IMPORTANT: Ensure your go.mod file correctly references github.com/fastly/go-fastly/v12
 	// If errors persist, try running:
 	// go clean -modcache
-	// go get -u github.com/fastly/go-fastly/v11/fastly
+	// go get -u github.com/fastly/go-fastly/v12/fastly
 	// go mod tidy
-	"github.com/fastly/go-fastly/v11/fastly"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/common"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/lists"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/rules"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/signals"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/datadog"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/jira"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/mailinglist"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/microsoftteams"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/opsgenie"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/pagerduty"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/slack"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/alerts/webhook"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/redactions"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/thresholds"
-	"github.com/fastly/go-fastly/v11/fastly/ngwaf/v1/workspaces/virtualpatches"
+	"github.com/fastly/go-fastly/v12/fastly"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/lists"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/rules"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/scope"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/signals"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/datadog"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/jira"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/mailinglist"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/microsoftteams"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/opsgenie"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/pagerduty"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/slack"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/webhook"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/redactions"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/thresholds"
+	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/virtualpatches"
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
@@ -160,8 +160,8 @@ func importNGWAFWorkspaces(client *fastly.Client, rootBody *hclwrite.Body) (*wor
 // importNGWAFAccountLists handles importing NGWAF account list resources
 func importNGWAFAccountLists(client *fastly.Client, rootBody *hclwrite.Body) (*lists.Lists, int, error) {
 	fmt.Println("\nFetching NGWAF account lists...")
-	accountScope := &common.Scope{
-		Type:      common.ScopeTypeAccount,
+	accountScope := &scope.Scope{
+		Type:      scope.ScopeTypeAccount,
 		AppliesTo: []string{"*"},
 	}
 
@@ -214,8 +214,8 @@ func importNGWAFAccountLists(client *fastly.Client, rootBody *hclwrite.Body) (*l
 // importNGWAFAccountRules handles importing NGWAF account rule resources
 func importNGWAFAccountRules(client *fastly.Client, rootBody *hclwrite.Body) (*rules.Rules, int, error) {
 	fmt.Println("\nFetching NGWAF account rules...")
-	accountScope := &common.Scope{
-		Type:      common.ScopeTypeAccount,
+	accountScope := &scope.Scope{
+		Type:      scope.ScopeTypeAccount,
 		AppliesTo: []string{"*"},
 	}
 
@@ -268,8 +268,8 @@ func importNGWAFAccountRules(client *fastly.Client, rootBody *hclwrite.Body) (*r
 // importNGWAFAccountSignals handles importing NGWAF account signal resources
 func importNGWAFAccountSignals(client *fastly.Client, rootBody *hclwrite.Body) (*signals.Signals, int, error) {
 	fmt.Println("\nFetching NGWAF account signals...")
-	accountScope := &common.Scope{
-		Type:      common.ScopeTypeAccount,
+	accountScope := &scope.Scope{
+		Type:      scope.ScopeTypeAccount,
 		AppliesTo: []string{"*"},
 	}
 
@@ -2502,8 +2502,8 @@ func importNGWAFWorkspaceLists(client *fastly.Client, rootBody *hclwrite.Body, n
 
 		fmt.Printf("  Fetching lists for workspace: %s (ID: %s)\n", workspace.Name, workspace.WorkspaceID)
 
-		workspaceScope := &common.Scope{
-			Type:      common.ScopeTypeWorkspace,
+		workspaceScope := &scope.Scope{
+			Type:      scope.ScopeTypeWorkspace,
 			AppliesTo: []string{workspace.WorkspaceID},
 		}
 
@@ -2572,8 +2572,8 @@ func importNGWAFWorkspaceRules(client *fastly.Client, rootBody *hclwrite.Body, n
 
 		fmt.Printf("  Fetching rules for workspace: %s (ID: %s)\n", workspace.Name, workspace.WorkspaceID)
 
-		workspaceScope := &common.Scope{
-			Type:      common.ScopeTypeWorkspace,
+		workspaceScope := &scope.Scope{
+			Type:      scope.ScopeTypeWorkspace,
 			AppliesTo: []string{workspace.WorkspaceID},
 		}
 
@@ -2642,8 +2642,8 @@ func importNGWAFWorkspaceSignals(client *fastly.Client, rootBody *hclwrite.Body,
 
 		fmt.Printf("  Fetching signals for workspace: %s (ID: %s)\n", workspace.Name, workspace.WorkspaceID)
 
-		workspaceScope := &common.Scope{
-			Type:      common.ScopeTypeWorkspace,
+		workspaceScope := &scope.Scope{
+			Type:      scope.ScopeTypeWorkspace,
 			AppliesTo: []string{workspace.WorkspaceID},
 		}
 

@@ -7,8 +7,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dnaeon/go-vcr v1.2.0 h1:zHCHvJYTMh1N7xnV7zf1m1GPBF9Ad0Jk/whtQ1663qI=
 github.com/dnaeon/go-vcr v1.2.0/go.mod h1:R4UdLID7HZT3taECzJs4YgbbH6PIGXB6W/sc5OLb6RQ=
-github.com/fastly/go-fastly/v11 v11.3.1 h1:GiBDf9k1Xh5yT1hAD64EC8WDiBScDETNh1gfDP0gCaA=
-github.com/fastly/go-fastly/v11 v11.3.1/go.mod h1:sphV7DVAKUZT30O1h9m9Lw9DbB0kC3CnQUOhVI3gaeo=
+github.com/fastly/go-fastly/v12 v12.1.0 h1:AONgwSHg/XEjSaMePpXV9RsHVojgG6kIp2rpOZ0uN38=
+github.com/fastly/go-fastly/v12 v12.1.0/go.mod h1:9An7aQ1PaZcMb4jnot+lWEBNnHBMl9t4U0OUV8XVoMA=
 github.com/go-test/deep v1.0.3 h1:ZrJSEWsXzPOxaZnFteGEfooLba+ju3FYIbOrS+rQd68=
 github.com/go-test/deep v1.0.3/go.mod h1:wGDj63lr65AM2AQyKZd/NYHGb0R+1RLqB8NKt3aSFNA=
 github.com/google/go-cmp v0.5.2/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
