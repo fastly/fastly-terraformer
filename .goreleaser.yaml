@@ -14,13 +14,24 @@ builds:
     binary: fastly-terraformer
     env:
       - CGO_ENABLED=0
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
     goos:
       - linux
       - darwin
       - windows
+      - freebsd
     goarch:
       - amd64
       - arm64
+      - '386'
+      - arm
+    ignore:
+      - goos: darwin
+        goarch: '386'
+      - goos: darwin
+        goarch: arm
     ldflags:
       - -s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}}
 
@@ -30,10 +41,7 @@ archives:
       - fastly-terraformer
     formats:
       - tar.gz
-    format_overrides:
-      - goos: windows
-        formats:
-          - zip
+      - zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
@@ -41,19 +49,8 @@ checksum:
   algorithm: sha256
 
 changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
-      - '^chore:'
-      - Merge pull request
-      - Merge branch
+  disable: true
 
 release:
-  github:
-    owner: fastly
-    name: fastly-terraformer
-  draft: false
+  draft: true
   prerelease: auto
-  name_template: "{{ .Tag }}"
