@@ -32,3 +32,12 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag successful build
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          CI_TAG="ci-success-${GITHUB_SHA::7}"
+          git tag -a "$CI_TAG" -m "CI build successful for ${{ github.ref_name }}"
+          git push origin "$CI_TAG"
