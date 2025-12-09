@@ -1,0 +1,56 @@
+# GoReleaser configuration for fastly-terraformer
+# See: https://goreleaser.com/customization/
+version: 2
+
+project_name: fastly-terraformer
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: fastly-terraformer
+    main: .
+    binary: fastly-terraformer
+    env:
+      - CGO_ENABLED=0
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    goos:
+      - linux
+      - darwin
+      - windows
+      - freebsd
+    goarch:
+      - amd64
+      - arm64
+      - '386'
+      - arm
+    ignore:
+      - goos: darwin
+        goarch: '386'
+      - goos: darwin
+        goarch: arm
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}}
+
+archives:
+  - id: fastly-terraformer
+    builds:
+      - fastly-terraformer
+    formats:
+      - tar.gz
+      - zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_SHA256SUMS"
+  algorithm: sha256
+
+changelog:
+  disable: true
+
+release:
+  draft: true
+  prerelease: auto

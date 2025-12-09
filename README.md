@@ -93,6 +93,28 @@ The following Fastly provider resources are **not currently imported** by this t
 
 ## Installation
 
+### Download Pre-built Binary
+
+Download the latest release for your platform from the [Releases](https://github.com/fastly/fastly-terraformer/releases) page.
+
+Replace `VERSION` below with the desired version (e.g., `v1.0.0`):
+
+```bash
+# For Linux (amd64)
+VERSION=v1.0.0  # Replace with desired version
+curl -L -o fastly-terraformer.tar.gz "https://github.com/fastly/fastly-terraformer/releases/download/${VERSION}/fastly-terraformer_${VERSION#v}_linux_amd64.tar.gz"
+tar -xzf fastly-terraformer.tar.gz
+chmod +x fastly-terraformer
+
+# For macOS (arm64)
+VERSION=v1.0.0  # Replace with desired version
+curl -L -o fastly-terraformer.tar.gz "https://github.com/fastly/fastly-terraformer/releases/download/${VERSION}/fastly-terraformer_${VERSION#v}_darwin_arm64.tar.gz"
+tar -xzf fastly-terraformer.tar.gz
+chmod +x fastly-terraformer
+```
+
+### Build from Source
+
 Clone the repository and build the tool:
 
 ```bash
