@@ -106,6 +106,24 @@ func validateImportMode(mode string) string {
 	return mode
 }
 
+// filterServicesByVCLServiceID filters a service list to only the service with the given ID.
+// If vclServiceID is empty, the original services slice is returned unmodified.
+// An error is returned if the ID is not found or identifies a non-VCL service.
+func filterServicesByVCLServiceID(services []*fastly.Service, vclServiceID string) ([]*fastly.Service, error) {
+	if vclServiceID == "" {
+		return services, nil
+	}
+	for _, svc := range services {
+		if svc.ServiceID != nil && *svc.ServiceID == vclServiceID {
+			if svc.Type != nil && *svc.Type != "vcl" {
+				return nil, fmt.Errorf("service ID %s is not a VCL service (type: %s)", vclServiceID, *svc.Type)
+			}
+			return []*fastly.Service{svc}, nil
+		}
+	}
+	return nil, fmt.Errorf("no VCL service found with ID %s", vclServiceID)
+}
+
 // importNGWAFWorkspaces handles importing NGWAF workspace resources
 func importNGWAFWorkspaces(client *fastly.Client, rootBody *hclwrite.Body) (*workspaces.Workspaces, int, error) {
 	fmt.Println("\nFetching NGWAF workspaces...")
@@ -3115,6 +3133,7 @@ func main() {
 	// --- 0. Parse CLI Arguments ---
 	var importMode = flag.String("import", "all", "Specify which resources to import: all (default) or ngwaf")
 	var showHelp = flag.Bool("help", false, "Show help information")
+	var vclServiceID = flag.String("vcl-service-id", "", "Specify a single VCL service ID to import (optional, only applicable with -import all)")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "\nfastly-terraformer generates Terraform import blocks for Fastly resources.\n\n")
@@ -3126,9 +3145,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\nEnvironment Variables:\n")
 		fmt.Fprintf(os.Stderr, "  FASTLY_API_KEY  Your Fastly API token (required)\n")
 		fmt.Fprintf(os.Stderr, "\nExamples:\n")
-		fmt.Fprintf(os.Stderr, "  %s                    # Import all resources\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s -import all        # Import all resources (explicit)\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s -import ngwaf      # Import only NGWAF resources\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  %s                                      # Import all resources\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  %s -import all                          # Import all resources (explicit)\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  %s -import ngwaf                        # Import only NGWAF resources\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  %s -vcl-service-id SERVICE_ID           # Import only the specified VCL service (requires -import all)\n", os.Args[0])
 	}
 	flag.Parse()
 
@@ -3143,6 +3163,10 @@ func main() {
 	if originalMode != *importMode {
 		fmt.Fprintf(os.Stderr, "Error: Invalid import mode '%s'. Valid options are 'all' or 'ngwaf'.\n", originalMode)
 		fmt.Fprintf(os.Stderr, "Using default mode 'all'.\n\n")
+	}
+
+	if *vclServiceID != "" && *importMode != "all" {
+		fmt.Fprintf(os.Stderr, "Warning: -vcl-service-id flag is only applicable with -import all mode and will be ignored.\n")
 	}
 
 	fmt.Printf("Import mode: %s\n", *importMode)
@@ -3177,6 +3201,15 @@ func main() {
 		services, err = client.ListServices(context.Background(), listServicesInput)
 		if err != nil {
 			log.Fatalf("Error listing Fastly services: %v", err)
+		}
+
+		// If a specific VCL service ID was requested, filter to only that service
+		if *vclServiceID != "" {
+			services, err = filterServicesByVCLServiceID(services, *vclServiceID)
+			if err != nil {
+				log.Fatalf("Error filtering services by VCL service ID: %v", err)
+			}
+			fmt.Printf("Filtered to VCL service ID: %s\n", *vclServiceID)
 		}
 
 		if len(services) == 0 {

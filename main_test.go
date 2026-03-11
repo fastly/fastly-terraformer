@@ -330,6 +330,74 @@ func TestValidateImportMode(t *testing.T) {
 	}
 }
 
+// TestFilterServicesByVCLServiceID tests the service filtering helper function
+func TestFilterServicesByVCLServiceID(t *testing.T) {
+	vclType := "vcl"
+	wasmType := "wasm"
+	id1 := "abc123"
+	id2 := "def456"
+	name1 := "VCL Service"
+	name2 := "Compute Service"
+
+	services := []*fastly.Service{
+		{ServiceID: &id1, Name: &name1, Type: &vclType},
+		{ServiceID: &id2, Name: &name2, Type: &wasmType},
+	}
+
+	tests := []struct {
+		name         string
+		vclServiceID string
+		expectCount  int
+		expectError  bool
+	}{
+		{
+			name:         "empty ID returns all services",
+			vclServiceID: "",
+			expectCount:  2,
+			expectError:  false,
+		},
+		{
+			name:         "valid VCL service ID returns that service",
+			vclServiceID: "abc123",
+			expectCount:  1,
+			expectError:  false,
+		},
+		{
+			name:         "non-VCL service ID returns error",
+			vclServiceID: "def456",
+			expectCount:  0,
+			expectError:  true,
+		},
+		{
+			name:         "unknown service ID returns error",
+			vclServiceID: "unknown",
+			expectCount:  0,
+			expectError:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := filterServicesByVCLServiceID(services, tt.vclServiceID)
+			if tt.expectError && err == nil {
+				t.Error("Expected error but got none")
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("Expected no error but got: %v", err)
+			}
+			if !tt.expectError && len(result) != tt.expectCount {
+				t.Errorf("Expected %d services, got %d", tt.expectCount, len(result))
+			}
+			// When filtering to a specific service, verify it's the correct one
+			if !tt.expectError && tt.vclServiceID != "" && len(result) == 1 {
+				if result[0].ServiceID == nil || *result[0].ServiceID != tt.vclServiceID {
+					t.Errorf("Expected service ID %s, got %v", tt.vclServiceID, result[0].ServiceID)
+				}
+			}
+		})
+	}
+}
+
 // TestImportNGWAFWorkspaces tests the NGWAF workspace import function with minimal verification
 func TestImportNGWAFWorkspaces(t *testing.T) {
 	// This test verifies the function exists and has the right signature
