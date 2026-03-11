@@ -3559,45 +3559,59 @@ func main() {
 		}
 
 		// --- 7. Process NGWAF Resources ---
-		ngwafWorkspaces, workspaceImportCount, err := importNGWAFWorkspaces(client, rootBody)
-		if err == nil {
-			importCount += workspaceImportCount
-		}
+		// Skip NGWAF imports when scoped to a single VCL service via -vcl-service-id,
+		// since NGWAF settings are account/workspace-level resources, not service-specific.
+		var ngwafWorkspaces *workspaces.Workspaces
+		var ngwafLists *lists.Lists
+		var ngwafRules *rules.Rules
+		var ngwafSignals *signals.Signals
+		if *vclServiceID == "" {
+			var workspaceImportCount int
+			ngwafWorkspaces, workspaceImportCount, err = importNGWAFWorkspaces(client, rootBody)
+			if err == nil {
+				importCount += workspaceImportCount
+			}
 
-		ngwafLists, listsImportCount, err := importNGWAFAccountLists(client, rootBody)
-		if err == nil {
-			importCount += listsImportCount
-		}
+			var listsImportCount int
+			ngwafLists, listsImportCount, err = importNGWAFAccountLists(client, rootBody)
+			if err == nil {
+				importCount += listsImportCount
+			}
 
-		ngwafRules, rulesImportCount, err := importNGWAFAccountRules(client, rootBody)
-		if err == nil {
-			importCount += rulesImportCount
-		}
+			var rulesImportCount int
+			ngwafRules, rulesImportCount, err = importNGWAFAccountRules(client, rootBody)
+			if err == nil {
+				importCount += rulesImportCount
+			}
 
-		ngwafSignals, signalsImportCount, err := importNGWAFAccountSignals(client, rootBody)
-		if err == nil {
-			importCount += signalsImportCount
-		}
+			var signalsImportCount int
+			ngwafSignals, signalsImportCount, err = importNGWAFAccountSignals(client, rootBody)
+			if err == nil {
+				importCount += signalsImportCount
+			}
 
-		// Import workspace-scoped lists, rules, and signals
-		workspaceListsImportCount, err := importNGWAFWorkspaceLists(client, rootBody, ngwafWorkspaces)
-		if err == nil {
-			importCount += workspaceListsImportCount
-		}
+			// Import workspace-scoped lists, rules, and signals
+			workspaceListsImportCount, err := importNGWAFWorkspaceLists(client, rootBody, ngwafWorkspaces)
+			if err == nil {
+				importCount += workspaceListsImportCount
+			}
 
-		workspaceRulesImportCount, err := importNGWAFWorkspaceRules(client, rootBody, ngwafWorkspaces)
-		if err == nil {
-			importCount += workspaceRulesImportCount
-		}
+			workspaceRulesImportCount, err := importNGWAFWorkspaceRules(client, rootBody, ngwafWorkspaces)
+			if err == nil {
+				importCount += workspaceRulesImportCount
+			}
 
-		workspaceSignalsImportCount, err := importNGWAFWorkspaceSignals(client, rootBody, ngwafWorkspaces)
-		if err == nil {
-			importCount += workspaceSignalsImportCount
-		}
+			workspaceSignalsImportCount, err := importNGWAFWorkspaceSignals(client, rootBody, ngwafWorkspaces)
+			if err == nil {
+				importCount += workspaceSignalsImportCount
+			}
 
-		workspaceScopedImportCount, err := importNGWAFWorkspaceScopedResources(client, rootBody, ngwafWorkspaces)
-		if err == nil {
-			importCount += workspaceScopedImportCount
+			workspaceScopedImportCount, err := importNGWAFWorkspaceScopedResources(client, rootBody, ngwafWorkspaces)
+			if err == nil {
+				importCount += workspaceScopedImportCount
+			}
+		} else {
+			fmt.Println("\nSkipping NGWAF imports because -vcl-service-id is set.")
 		}
 
 		outputPath := "./import.tf"
