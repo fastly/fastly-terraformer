@@ -143,7 +143,7 @@ export FASTLY_TF_DISPLAY_SENSITIVE_FIELDS="true"
 
 ### Command Line Options
 
-The tool supports two import modes:
+The tool supports two import modes and an optional service filter:
 
 ```bash
 # Import all resources (default)
@@ -153,8 +153,28 @@ The tool supports two import modes:
 # Import only NGWAF resources  
 ./fastly-terraformer -import ngwaf
 
+# Import only a specific VCL service (and its associated sub-resources)
+./fastly-terraformer -vcl-service-id SERVICE_ID
+
 # Show help
 ./fastly-terraformer -help
+```
+
+#### `-vcl-service-id SERVICE_ID`
+
+Restricts the import to a single VCL service, identified by its Fastly service ID. This is useful when you want to bring one service under Terraform management without importing your entire account.
+
+**Behavior:**
+
+- Only applicable with `-import all` mode (the default). If used with `-import ngwaf`, the flag is ignored and a warning is printed.
+- The specified service must exist and must be a VCL service (not a Compute service). The tool returns an error if the ID is not found or belongs to a non-VCL service.
+- NGWAF imports are automatically skipped when this flag is set, because the import is scoped to a single service.
+
+**Example:**
+
+```bash
+export FASTLY_API_KEY="your-fastly-api-token-here"
+./fastly-terraformer -import all -vcl-service-id abc123def456
 ```
 
 ### Complete Workflow
