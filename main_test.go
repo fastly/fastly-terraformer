@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	
-	"github.com/fastly/go-fastly/v12/fastly"
+
+	"github.com/fastly/go-fastly/v17/fastly"
 )
 
 func TestSanitizeForTerraformResourceName(t *testing.T) {
