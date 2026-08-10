@@ -9,28 +9,28 @@ import (
 	"regexp"
 	"strings"
 
-	// IMPORTANT: Ensure your go.mod file correctly references github.com/fastly/go-fastly/v12
+	// IMPORTANT: Ensure your go.mod file correctly references github.com/fastly/go-fastly/v17
 	// If errors persist, try running:
 	// go clean -modcache
-	// go get -u github.com/fastly/go-fastly/v12/fastly
+	// go get -u github.com/fastly/go-fastly/v17/fastly
 	// go mod tidy
-	"github.com/fastly/go-fastly/v12/fastly"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/lists"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/rules"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/scope"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/signals"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/datadog"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/jira"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/mailinglist"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/microsoftteams"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/opsgenie"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/pagerduty"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/slack"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/alerts/webhook"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/redactions"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/thresholds"
-	"github.com/fastly/go-fastly/v12/fastly/ngwaf/v1/workspaces/virtualpatches"
+	"github.com/fastly/go-fastly/v17/fastly"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/lists"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/rules"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/scope"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/signals"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/alerts/datadog"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/alerts/jira"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/alerts/mailinglist"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/alerts/microsoftteams"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/alerts/opsgenie"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/alerts/pagerduty"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/alerts/slack"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/alerts/webhook"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/redactions"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/thresholds"
+	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/virtualpatches"
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
