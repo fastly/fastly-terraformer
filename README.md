@@ -16,24 +16,12 @@
 ## Supported Resources (Imported)
 
 ### Fastly Core Services
-- ✅ **`fastly_service_vcl`** - VCL services and custom VCL files
-- ✅ **`fastly_service_compute`** - Compute (WASM) services  
+- ✅ **`fastly_service_vcl`** - VCL services (whole service; domains, backends, request
+  settings, response objects, health checks, directors, ACLs, dictionaries, snippets,
+  custom VCL files, and logging endpoints are all nested blocks of this resource and are
+  populated by `terraform plan -generate-config-out`, not by a separate import block)
+- ✅ **`fastly_service_compute`** - Compute (WASM) services (same nested-block note as above)
 - ✅ **`fastly_service_dynamic_snippet_content`** - Dynamic snippets for VCL services
-- ✅ **`fastly_service_domain`** - Service domains
-- ✅ **`fastly_service_acl`** - Access Control Lists (VCL services only)
-- ✅ **`fastly_service_dictionary`** - Edge dictionaries (VCL services only)
-- ✅ **`fastly_service_backend`** - Backend configurations
-- ✅ **`fastly_service_health_check`** - Health check configurations
-- ✅ **`fastly_service_director`** - Load balancing directors (VCL services only)
-- ✅ **`fastly_service_request_setting`** - Request settings
-- ✅ **`fastly_service_response_object`** - Response objects
-- ✅ **`fastly_service_snippet`** - Static VCL snippets
-- ✅ **`fastly_service_logging_s3`** - S3 logging endpoints
-- ✅ **`fastly_service_logging_syslog`** - Syslog logging endpoints  
-- ✅ **`fastly_service_logging_datadog`** - Datadog logging endpoints
-- ✅ **`fastly_service_logging_bigquery`** - BigQuery logging endpoints
-- ✅ **`fastly_service_logging_splunk`** - Splunk logging endpoints
-- ✅ **`fastly_service_logging_papertrail`** - Papertrail logging endpoints
 
 ### Fastly Store Resources
 - ✅ **`fastly_configstore`** - Config store resources
