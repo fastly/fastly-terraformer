@@ -31,6 +31,7 @@ import (
 	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/redactions"
 	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/thresholds"
 	"github.com/fastly/go-fastly/v17/fastly/ngwaf/v1/workspaces/virtualpatches"
+	"github.com/fastly/go-fastly/v17/fastly/objectstorage/accesskeys"
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
@@ -481,6 +482,75 @@ func importSecretStores(client *fastly.Client, rootBody *hclwrite.Body) (int, er
 			importCount++
 
 			fmt.Printf("  Added import for Secret Store: %s (ID: %s) as fastly_secretstore.%s\n", store.Name, store.StoreID, tfStoreResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
+// generateObjectStorageAccessKeyResourceName creates a Terraform resource name for an
+// Object Storage access key. It uses the sanitized description when available, falling
+// back to the access key ID, and always appends the sanitized access key ID as a suffix
+// to ensure uniqueness, since access key descriptions are not guaranteed to be unique.
+func generateObjectStorageAccessKeyResourceName(description, accessKeyID string) string {
+	// Generate the base resource name using the description if available, otherwise use ID
+	var baseName string
+	if description != "" {
+		baseName = sanitizeForTerraformResourceName(description, "object_storage_access_key")
+	} else {
+		baseName = sanitizeForTerraformResourceName(accessKeyID, "object_storage_access_key")
+	}
+
+	// Ensure uniqueness by adding the access key ID suffix (descriptions are not unique)
+	sanitizedAccessKeyID := sanitizeForTerraformResourceName(accessKeyID, "id")
+	return fmt.Sprintf("%s_%s", baseName, sanitizedAccessKeyID)
+}
+
+// importObjectStorageAccessKeys handles importing Fastly Object Storage access key resources.
+// Note: Object Storage buckets and their contents are not managed by the Fastly Terraform
+// provider. They must be maintained with the AWS S3 provider via Fastly Object Storage's
+// S3-compatible API, so access keys are the only Object Storage resource imported here.
+func importObjectStorageAccessKeys(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly Object Storage access keys...")
+	fmt.Println("Note: Object Storage buckets and their contents are not managed by the Fastly Terraform provider.")
+	fmt.Println("      Maintain them with the AWS S3 provider using Fastly Object Storage's S3-compatible API:")
+	fmt.Println("      https://registry.terraform.io/providers/fastly/fastly/latest/docs/guides/fastly_object_storage")
+
+	accessKeysResponse, err := accesskeys.ListAccessKeys(context.Background(), client)
+	if err != nil {
+		log.Printf("Error listing Object Storage access keys: %v. Skipping Object Storage access key imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if len(accessKeysResponse.Data) == 0 {
+		fmt.Println("No Object Storage access keys found for this account.")
+	} else {
+		fmt.Printf("Found %d Object Storage access key(s). Adding to import.tf...\n", len(accessKeysResponse.Data))
+
+		for _, accessKey := range accessKeysResponse.Data {
+			if accessKey.AccessKeyID == "" {
+				log.Printf("Skipping Object Storage access key with empty ID (Description: %s)\n", accessKey.Description)
+				continue
+			}
+
+			// Generate a unique resource name from the description and access key ID
+			tfAccessKeyResourceName := generateObjectStorageAccessKeyResourceName(accessKey.Description, accessKey.AccessKeyID)
+
+			// Create the import block for the Object Storage access key
+			accessKeyImportBlock := rootBody.AppendNewBlock("import", nil)
+			accessKeyImportBody := accessKeyImportBlock.Body()
+			accessKeyImportBody.SetAttributeValue("id", cty.StringVal(accessKey.AccessKeyID))
+
+			// Set the Terraform resource type and name
+			accessKeyImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_object_storage_access_keys"},
+				hcl.TraverseAttr{Name: tfAccessKeyResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("  Added import for Object Storage access key: %s (ID: %s) as fastly_object_storage_access_keys.%s\n", accessKey.Description, accessKey.AccessKeyID, tfAccessKeyResourceName)
 		}
 	}
 
@@ -1754,6 +1824,12 @@ func main() {
 		secretStoreImportCount, err := importSecretStores(client, rootBody)
 		if err == nil {
 			importCount += secretStoreImportCount
+		}
+
+		// Object Storage access keys (buckets themselves are managed via the AWS S3 provider)
+		objectStorageAccessKeyImportCount, err := importObjectStorageAccessKeys(client, rootBody)
+		if err == nil {
+			importCount += objectStorageAccessKeyImportCount
 		}
 
 		// --- 5. Process TLS Resources ---
