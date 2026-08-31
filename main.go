@@ -530,7 +530,7 @@ func importObjectStorageAccessKeys(client *fastly.Client, rootBody *hclwrite.Bod
 
 		for _, accessKey := range accessKeysResponse.Data {
 			if accessKey.AccessKeyID == "" {
-				log.Printf("Skipping Object Storage access key with empty ID (Description: %s)\n", accessKey.Description)
+				log.Printf("Skipping Object Storage access key with empty ID (Description: %s)", accessKey.Description)
 				continue
 			}
 
