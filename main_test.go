@@ -513,6 +513,99 @@ func TestImportSecretStores(t *testing.T) {
 	_ = fn // Use the variable to avoid unused variable error
 }
 
+// TestImportObjectStorageAccessKeys tests the Object Storage access key import function
+func TestImportObjectStorageAccessKeys(t *testing.T) {
+	// Verify function signature exists
+	fn := importObjectStorageAccessKeys
+	_ = fn // Use the variable to avoid unused variable error
+}
+
+func TestGenerateObjectStorageAccessKeyResourceName(t *testing.T) {
+	tests := []struct {
+		name        string
+		description string
+		accessKeyID string
+		expected    string
+	}{
+		{
+			name:        "normal description and access key ID",
+			description: "Production Object Storage Key",
+			accessKeyID: "AKIAEXAMPLE123",
+			expected:    "production_object_storage_key_akiaexample123",
+		},
+		{
+			name:        "empty description falls back to access key ID",
+			description: "",
+			accessKeyID: "AKIAEXAMPLE123",
+			expected:    "akiaexample123_akiaexample123",
+		},
+		{
+			name:        "description with special characters",
+			description: "Read-Only Key!@#",
+			accessKeyID: "abc-123-def",
+			expected:    "read_only_key_abc_123_def",
+		},
+		{
+			name:        "description starting with number",
+			description: "123 backup key",
+			accessKeyID: "keyXYZ",
+			expected:    "tf_123_backup_key_keyxyz",
+		},
+		{
+			name:        "description with only special characters",
+			description: "!!!",
+			accessKeyID: "ak456",
+			expected:    "object_storage_access_key_sanitized_empty_ak456",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := generateObjectStorageAccessKeyResourceName(tt.description, tt.accessKeyID)
+			if result != tt.expected {
+				t.Errorf("generateObjectStorageAccessKeyResourceName(%q, %q) = %q, want %q",
+					tt.description, tt.accessKeyID, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestGenerateObjectStorageAccessKeyResourceNameUniqueness tests that access keys with the
+// same description get unique resource names, since descriptions are not guaranteed unique
+func TestGenerateObjectStorageAccessKeyResourceNameUniqueness(t *testing.T) {
+	// Two access keys sharing the same description
+	description := "shared key"
+	accessKeyID1 := "key1"
+	accessKeyID2 := "key2"
+
+	result1 := generateObjectStorageAccessKeyResourceName(description, accessKeyID1)
+	result2 := generateObjectStorageAccessKeyResourceName(description, accessKeyID2)
+
+	// Results should be different to avoid duplicate import blocks
+	if result1 == result2 {
+		t.Errorf("Expected different resource names for same-described access keys, but got: %q and %q", result1, result2)
+	}
+
+	// Both should contain the shared description
+	if !strings.Contains(result1, "shared_key") {
+		t.Errorf("Expected result1 %q to contain description 'shared_key'", result1)
+	}
+	if !strings.Contains(result2, "shared_key") {
+		t.Errorf("Expected result2 %q to contain description 'shared_key'", result2)
+	}
+
+	// Verify both results follow the expected pattern: description_accesskeyid
+	expectedPattern1 := "shared_key_key1"
+	expectedPattern2 := "shared_key_key2"
+
+	if result1 != expectedPattern1 {
+		t.Errorf("Expected result1 to be %q, got %q", expectedPattern1, result1)
+	}
+	if result2 != expectedPattern2 {
+		t.Errorf("Expected result2 to be %q, got %q", expectedPattern2, result2)
+	}
+}
+
 // TestImportTLSSubscriptions tests the TLS subscription import function
 func TestImportTLSSubscriptions(t *testing.T) {
 	// Verify function signature exists

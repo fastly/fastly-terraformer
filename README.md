@@ -28,6 +28,16 @@
 - ✅ **`fastly_kvstore`** - Key-value store resources
 - ✅ **`fastly_secretstore`** - Secret store resources
 
+### Fastly Object Storage
+- ✅ **`fastly_object_storage_access_keys`** - Object Storage access keys
+
+> **Note**: Object Storage buckets and their contents are not managed by the Fastly Terraform
+> provider and are therefore not imported by this tool. Maintain them with the AWS S3 provider
+> using Fastly Object Storage's S3-compatible API, as described in the
+> [provider guide](https://registry.terraform.io/providers/fastly/fastly/latest/docs/guides/fastly_object_storage).
+> Also note that the `secret_key` of an access key is only returned by the Fastly API at creation
+> time, so it cannot be recovered by importing an existing access key.
+
 ### TLS and Security  
 - ✅ **`fastly_tls_subscription`** - TLS subscriptions
 - ✅ **`fastly_tls_activation`** - TLS certificate activations
