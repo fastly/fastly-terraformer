@@ -388,6 +388,54 @@ func importConfigStores(client *fastly.Client, rootBody *hclwrite.Body) (int, er
 	return importCount, nil
 }
 
+// importConfigStoreEntries handles importing fastly_configstore_entries resources,
+// one per Config Store, covering the key/value entries within each store.
+func importConfigStoreEntries(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
+	fmt.Println("\nFetching Fastly Config Stores for entries import...")
+
+	configStores, err := client.ListConfigStores(context.Background(), &fastly.ListConfigStoresInput{})
+	if err != nil {
+		log.Printf("Error listing Config Stores: %v. Skipping Config Store Entries imports.", err)
+		return 0, err
+	}
+
+	importCount := 0
+	if len(configStores) == 0 {
+		fmt.Println("No Config Stores found for this account.")
+	} else {
+		fmt.Printf("Found %d Config Store(s). Adding entries imports to import.tf...\n", len(configStores))
+
+		for _, store := range configStores {
+			if store.StoreID == "" {
+				log.Printf("Skipping Config Store Entries with empty store ID (Name: %s)\n", store.Name)
+				continue
+			}
+
+			tfStoreResourceName := sanitizeForTerraformResourceName(store.Name, "configstore")
+			if store.Name == "" || tfStoreResourceName == "configstore_unnamed" || tfStoreResourceName == "configstore_sanitized_empty" {
+				sanitizedIDForName := sanitizeForTerraformResourceName(store.StoreID, "store")
+				tfStoreResourceName = fmt.Sprintf("configstore_%s", sanitizedIDForName)
+			}
+			tfEntriesResourceName := tfStoreResourceName + "_entries"
+
+			entriesImportBlock := rootBody.AppendNewBlock("import", nil)
+			entriesImportBody := entriesImportBlock.Body()
+			entriesImportBody.SetAttributeValue("id", cty.StringVal(fmt.Sprintf("%s/entries", store.StoreID)))
+
+			entriesImportBody.SetAttributeTraversal("to", hcl.Traversal{
+				hcl.TraverseRoot{Name: "fastly_configstore_entries"},
+				hcl.TraverseAttr{Name: tfEntriesResourceName},
+			})
+			rootBody.AppendNewline()
+			importCount++
+
+			fmt.Printf("  Added import for Config Store Entries: %s (ID: %s/entries) as fastly_configstore_entries.%s\n", store.Name, store.StoreID, tfEntriesResourceName)
+		}
+	}
+
+	return importCount, nil
+}
+
 // importKVStores handles importing Fastly KV Store resources
 func importKVStores(client *fastly.Client, rootBody *hclwrite.Body) (int, error) {
 	fmt.Println("\nFetching Fastly KV Stores...")
@@ -1814,6 +1862,11 @@ func main() {
 		configStoreImportCount, err := importConfigStores(client, rootBody)
 		if err == nil {
 			importCount += configStoreImportCount
+		}
+
+		configStoreEntriesImportCount, err := importConfigStoreEntries(client, rootBody)
+		if err == nil {
+			importCount += configStoreEntriesImportCount
 		}
 
 		kvStoreImportCount, err := importKVStores(client, rootBody)
