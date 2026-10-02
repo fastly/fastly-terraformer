@@ -25,6 +25,7 @@
 
 ### Fastly Store Resources
 - ✅ **`fastly_configstore`** - Config store resources
+- ✅ **`fastly_configstore_entries`** - Config store key/value entries
 - ✅ **`fastly_kvstore`** - Key-value store resources
 - ✅ **`fastly_secretstore`** - Secret store resources
 
